@@ -247,7 +247,7 @@ class LoadingPopup(ctk.CTkToplevel):
         self.destroy()
 
 # ==================== FORM FRAME ====================
-class FormFrame(ctk.CTkFrame):
+class FormFrame(ctk.CTkScrollableFrame):
     def __init__(self, master, app):
         super().__init__(master, corner_radius=12, fg_color="transparent")
         self.app = app
@@ -592,7 +592,7 @@ class WishLinkApp(ctk.CTk):
         
         # --- TITLE CHANGED HERE ---
         self.title("CT Wishlink Generator") 
-        self.resizable(False, False)
+        self.resizable(True, True)
         
         # --- WINDOW ICON SET HERE ---
         icon_path = resource_path("CT-Stdio.ico")
