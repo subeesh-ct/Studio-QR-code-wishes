@@ -2,373 +2,374 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-  <title>WishLink Studio · Your Surprise</title>
-  <!-- Tailwind CSS CDN -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Your Special Surprise</title>
+  
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts -->
+  
+  <!-- Google Fonts: Great Vibes for Name, Poppins for Text -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <!-- Font Awesome 6 -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <!-- canvas-confetti -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1/dist/confetti.browser.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <style>
-    :root {
-      --accent: #f59e0b;
-      --accent-dark: #b45309;
+    /* Base Styles */
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      background-color: #050505;
+      color: #ffffff;
     }
+
     .font-cursive {
       font-family: 'Great Vibes', cursive;
     }
-    .font-body {
-      font-family: 'Poppins', sans-serif;
+
+    /* Dynamic Background */
+    #bg-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-size: cover;
+      background-position: center;
+      z-index: -2;
+      transition: background-image 1s ease-in-out;
     }
-    .text-glow {
-      text-shadow: 0 0 20px rgba(255,215,0,0.5), 0 0 40px rgba(255,255,255,0.2);
+
+    /* Dark Overlay for Text Readability */
+    #bg-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      z-index: -1;
     }
-    /* Polaroid frame */
+
+    /* Glassmorphism Card */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Polaroid Image Frame */
     .polaroid {
-      background: white;
-      padding: 1rem 1rem 3rem 1rem;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-      transform: rotate(-2deg);
-      transition: transform 0.3s ease;
-      border-radius: 0.75rem;
+      background: #ffffff;
+      padding: 15px 15px 50px 15px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      transform: rotate(-3deg);
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      max-width: 320px;
+      margin: 0 auto;
+      position: relative;
     }
+    
     .polaroid:hover {
-      transform: rotate(0deg) scale(1.02);
+      transform: rotate(0deg) scale(1.03);
     }
+
     .polaroid img {
       width: 100%;
       height: auto;
-      border-radius: 0.5rem;
+      border-radius: 4px;
       display: block;
     }
-    .name-overlay {
+
+    .polaroid-text {
       position: absolute;
-      bottom: 0.5rem;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(8px);
-      color: white;
-      padding: 0.25rem 1.5rem;
-      border-radius: 9999px;
-      font-size: 2rem;
-      line-height: 1.2;
-      white-space: nowrap;
+      bottom: 10px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: #1a1a1a;
+      font-size: 1.8rem;
     }
-    /* Floating animations */
-    @keyframes floatUp {
-      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-      100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+
+    /* Custom Audio Player */
+    .audio-player-glass {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: inset 0 0 10px rgba(255,255,255,0.05);
     }
-    .floating-item {
-      position: fixed;
-      animation: floatUp 10s linear infinite;
-      pointer-events: none;
-      z-index: 30;
+
+    .progress-bar {
+      background: rgba(255, 255, 255, 0.2);
+      cursor: pointer;
     }
-    @keyframes fall {
-      to { transform: translateY(100vh) rotate(360deg); }
-    }
-    .snowflake {
-      position: fixed;
-      color: white;
-      font-size: 1.5rem;
-      animation: fall linear infinite;
-      pointer-events: none;
-      z-index: 30;
-    }
-    /* Progress fill */
+
     .progress-fill {
-      background-color: var(--accent);
-      box-shadow: 0 0 8px var(--accent);
+      background: linear-gradient(90deg, #d4af37, #ffdf00);
+      box-shadow: 0 0 10px rgba(255, 223, 0, 0.5);
     }
-    /* Surprise overlay animation */
-    @keyframes pulse-glow {
-      0%, 100% { text-shadow: 0 0 15px #ffd700, 0 0 30px #ff8c00; }
-      50% { text-shadow: 0 0 25px #ffd700, 0 0 50px #ff4500; }
+
+    /* Animations */
+    #surprise-screen {
+      transition: opacity 0.8s ease, visibility 0.8s;
     }
-    .surprise-icon {
-      animation: pulse-glow 2s infinite ease-in-out;
+
+    #main-content {
+      opacity: 0;
+      transform: translateY(30px) scale(0.95);
+      transition: all 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    #main-content.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .glow-text {
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.3);
+    }
+
+    .gift-bounce {
+      animation: bounceGift 2s infinite;
+    }
+
+    @keyframes bounceGift {
+      0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 15px rgba(255,215,0,0.6)); }
+      50% { transform: translateY(-20px) scale(1.05); filter: drop-shadow(0 0 30px rgba(255,215,0,0.9)); }
     }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center relative overflow-hidden font-body bg-black">
-  <!-- Dynamic Background Image (blurred & darkened) -->
-  <div id="bgLayer" class="fixed inset-0 bg-cover bg-center z-0 transition-all duration-1000" style="background-image: url('https://images.unsplash.com/photo-1618172193622-ae2d025f4032?w=1920&q=80'); filter: blur(12px) brightness(0.35);"></div>
+<body>
 
-  <!-- Surprise Overlay -->
-  <div id="surpriseOverlay" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/70 backdrop-blur-xl cursor-pointer transition-opacity duration-1000">
-    <i class="fas fa-gift text-8xl text-yellow-400 mb-6 surprise-icon drop-shadow-2xl"></i>
-    <p class="text-white text-3xl md:text-4xl font-bold tracking-widest text-center px-4 text-shadow" id="surpriseText">Your Surprise is Ready!<br><span class="text-xl mt-2 block font-normal">Tap to Open</span></p>
-  </div>
+  <!-- Dynamic Backgrounds -->
+  <div id="bg-container"></div>
+  <div id="bg-overlay"></div>
 
-  <!-- Main Glassmorphism Card (hidden initially) -->
-  <div id="mainCard" class="relative z-10 flex flex-col md:flex-row items-center justify-center w-full max-w-6xl mx-auto px-6 py-12 opacity-0 transition-all duration-1000 transform translate-y-8">
-    <!-- Polaroid Image Column -->
-    <div id="imageCol" class="md:w-1/2 w-full flex justify-center mb-8 md:mb-0 hidden">
-      <div class="polaroid relative max-w-sm mx-auto">
-        <img id="polaroidImg" src="" alt="Surprise Image">
-        <div class="name-overlay font-cursive" id="polaroidName">Name</div>
-      </div>
-    </div>
-
-    <!-- Greeting & Audio Column -->
-    <div id="greetingCol" class="md:w-1/2 w-full flex flex-col justify-center space-y-8 px-4">
-      <p id="occasionText" class="text-lg md:text-xl uppercase tracking-[0.3em] font-semibold" style="color: var(--accent)"></p>
-      <h1 id="nameText" class="font-cursive text-7xl md:text-9xl text-white text-glow leading-tight"></h1>
-      <p id="messageText" class="text-xl md:text-2xl text-gray-200 leading-relaxed font-medium"></p>
-
-      <!-- Custom Audio Player -->
-      <div id="audioPlayer" class="hidden bg-white/10 backdrop-blur-xl border border-white/20 rounded-full shadow-2xl flex items-center gap-4 py-3 px-6 w-full max-w-lg">
-        <button id="playBtn" class="rounded-full w-12 h-12 flex items-center justify-center text-2xl shadow-xl transition-all" style="background-color: var(--accent); color: white;">
-          <i class="fas fa-play"></i>
-        </button>
-        <div class="flex-1 h-2 bg-white/20 rounded-full cursor-pointer relative" id="progressBarContainer">
-          <div class="absolute top-0 left-0 h-2 rounded-full progress-fill transition-all duration-150" id="progressFill" style="width:0%"></div>
-        </div>
-        <div class="text-white text-sm font-semibold flex items-center gap-1">
-          <span id="currentTime">0:00</span><span>/</span><span id="duration">0:00</span>
-        </div>
-        <div id="loadingIndicator" class="hidden text-white text-sm whitespace-nowrap ml-2">
-          <i class="fas fa-spinner fa-pulse"></i> Loading...
-        </div>
-      </div>
+  <!-- Surprise / Loading Screen -->
+  <div id="surprise-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-xl">
+    <div class="cursor-pointer text-center group" onclick="openSurprise()">
+      <i class="fas fa-gift text-8xl text-yellow-500 gift-bounce mb-8 group-hover:text-yellow-300 transition-colors"></i>
+      <h2 class="text-3xl md:text-5xl font-semibold tracking-wider text-white glow-text">Your Surprise is Ready!</h2>
+      <p class="mt-4 text-xl text-gray-400 group-hover:text-white transition-colors">Tap anywhere to open</p>
     </div>
   </div>
 
-  <!-- Hidden Audio element -->
-  <audio id="audioElement" preload="auto"></audio>
+  <!-- Main Greeting Content -->
+  <div id="main-content" class="min-h-screen flex items-center justify-center p-4 md:p-10 pointer-events-none">
+    
+    <!-- Premium Glass Card -->
+    <div class="glass-card rounded-3xl p-8 md:p-14 w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12 pointer-events-auto relative overflow-hidden">
+      
+      <!-- Left Column: Image (Hidden if no image) -->
+      <div id="img-container" class="hidden w-full lg:w-5/12 flex justify-center z-10">
+        <div class="polaroid">
+          <img id="user-img" src="" alt="Memory">
+          <div class="polaroid-text font-cursive font-bold" id="polaroid-name">Name</div>
+        </div>
+      </div>
+
+      <!-- Right Column: Text & Audio -->
+      <div id="text-container" class="w-full flex flex-col justify-center text-center lg:text-left z-10">
+        <p id="occ-label" class="text-yellow-500 font-semibold tracking-[0.4em] uppercase text-sm md:text-lg mb-2 drop-shadow-md"></p>
+        
+        <h1 id="name-label" class="font-cursive text-7xl md:text-9xl text-white glow-text leading-tight mb-6 mt-2">
+          Name
+        </h1>
+        
+        <p id="msg-label" class="text-lg md:text-2xl text-gray-200 font-light leading-relaxed mb-10 max-w-2xl mx-auto lg:mx-0">
+          Message goes here...
+        </p>
+
+        <!-- Custom Audio Player (Hidden if no audio) -->
+        <div id="audio-container" class="hidden w-full max-w-md mx-auto lg:mx-0 audio-player-glass rounded-full p-3 flex items-center gap-4">
+          <button id="play-btn" class="w-12 h-12 rounded-full bg-gradient-to-r from-yellow-600 to-yellow-400 text-black flex items-center justify-center text-xl hover:scale-105 transition-transform shadow-[0_0_15px_rgba(255,215,0,0.5)]">
+            <i class="fas fa-play" id="play-icon"></i>
+          </button>
+          
+          <div class="flex-1">
+            <div id="progress-container" class="progress-bar h-2 rounded-full relative w-full">
+              <div id="progress-fill" class="progress-fill absolute top-0 left-0 h-full w-0 rounded-full transition-all duration-100"></div>
+            </div>
+            <div class="flex justify-between text-xs text-gray-400 mt-2 font-medium">
+              <span id="time-current">0:00</span>
+              <span id="time-total">0:00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <audio id="audio-player" src=""></audio>
 
   <script>
-    (function() {
-      // ---------- URL Parsing & Redirect ----------
-      const params = new URLSearchParams(window.location.search);
-      const name = params.get('name');
-      const msg = params.get('msg');
-      if (!name || !msg) {
-        window.location.href = 'https://example.com';
-        return;
-      }
-      const occasion = params.get('occ') || 'Special Day';
-      const theme = params.get('theme') || '';
-      const imgUrl = params.get('img') || null;
-      const audioUrl = params.get('audio') || null;
+    // --- 1. URL Parsing & Validation ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const uName = urlParams.get('name');
+    const uMsg = urlParams.get('msg');
+    
+    // Redirect if required parameters are missing
+    if (!uName || !uMsg) {
+      window.location.href = "https://example.com"; 
+    }
 
-      // ---------- DOM Elements ----------
-      const bgLayer = document.getElementById('bgLayer');
-      const surpriseOverlay = document.getElementById('surpriseOverlay');
-      const mainCard = document.getElementById('mainCard');
-      const imageCol = document.getElementById('imageCol');
-      const polaroidImg = document.getElementById('polaroidImg');
-      const polaroidName = document.getElementById('polaroidName');
-      const occasionText = document.getElementById('occasionText');
-      const nameText = document.getElementById('nameText');
-      const messageText = document.getElementById('messageText');
-      const audioPlayerDiv = document.getElementById('audioPlayer');
-      const audioEl = document.getElementById('audioElement');
-      const playBtn = document.getElementById('playBtn');
-      const progressFill = document.getElementById('progressFill');
-      const progressBarContainer = document.getElementById('progressBarContainer');
-      const currentTimeSpan = document.getElementById('currentTime');
-      const durationSpan = document.getElementById('duration');
-      const loadingIndicator = document.getElementById('loadingIndicator');
+    const uOcc = urlParams.get('occ') || 'Special Day';
+    const uTheme = urlParams.get('theme') || '';
+    const uImg = urlParams.get('img');
+    const uAudio = urlParams.get('audio');
 
-      // ---------- Populate Data ----------
-      polaroidName.textContent = name;
-      nameText.textContent = name;
-      occasionText.textContent = occasion.toUpperCase();
-      messageText.textContent = msg;
+    // --- 2. Populate Data ---
+    document.getElementById('polaroid-name').textContent = uName;
+    document.getElementById('name-label').textContent = uName;
+    document.getElementById('occ-label').textContent = uOcc;
+    document.getElementById('msg-label').textContent = uMsg;
 
-      if (imgUrl) {
-        imageCol.classList.remove('hidden');
-        polaroidImg.src = imgUrl;
-      } else {
-        // If no image, greeting takes more space
-        document.getElementById('greetingCol').classList.remove('md:w-1/2');
-        document.getElementById('greetingCol').classList.add('md:w-full', 'text-center', 'items-center');
-      }
+    const imgContainer = document.getElementById('img-container');
+    const textContainer = document.getElementById('text-container');
+    
+    if (uImg) {
+      document.getElementById('user-img').src = uImg;
+      imgContainer.classList.remove('hidden');
+      textContainer.classList.add('lg:w-7/12');
+    } else {
+      textContainer.classList.add('lg:text-center', 'items-center');
+    }
 
-      // ---------- Dynamic Occasion Theme & Background ----------
-      function applyOccasionTheme(occ) {
-        const root = document.documentElement;
-        const occLower = occ.toLowerCase().replace(/'/g,'');
-        let bgUrl, accent, accentDark, startAnimation;
+    // --- 3. Dynamic Themes Engine ---
+    const bgContainer = document.getElementById('bg-container');
+    let activeAnimation = null;
 
-        if (occLower.includes('birthday')) {
-          bgUrl = 'https://images.unsplash.com/photo-1558304970-9b1a1e0a4b6f?w=1920&q=80'; // dark balloons
-          accent = '#ff6b6b'; accentDark = '#c0392b';
-          startAnimation = startBirthday;
-        } else if (occLower.includes('diwali')) {
-          bgUrl = 'https://images.unsplash.com/photo-1600953953133-2d5d3b6c2b3b?w=1920&q=80'; // dark diwali lamps
-          accent = '#f39c12'; accentDark = '#d35400';
-          startAnimation = startDiwali;
-        } else if (occLower.includes('christmas')) {
-          bgUrl = 'https://images.unsplash.com/photo-1544216291-5890d99b6a0f?w=1920&q=80'; // snowy pine dark
-          accent = '#c0392b'; accentDark = '#a93226';
-          startAnimation = startChristmas;
-        } else if (occLower.includes('anniversary') || occLower.includes('wedding') || occLower.includes('valentine')) {
-          bgUrl = 'https://images.unsplash.com/photo-1518895949257-7621c3fb3822?w=1920&q=80'; // dark roses
-          accent = '#ff7eb3'; accentDark = '#e84393';
-          startAnimation = startRomantic;
-        } else {
-          // Custom / Default premium abstract
-          bgUrl = 'https://images.unsplash.com/photo-1558470598-a5dda9640f68?w=1920&q=80'; // dark luxury waves
-          accent = '#a29bfe'; accentDark = '#6c5ce7';
-          startAnimation = startDefault;
-        }
-
-        // Update background image and accent colors
-        bgLayer.style.backgroundImage = `url('${bgUrl}')`;
-        root.style.setProperty('--accent', accent);
-        root.style.setProperty('--accent-dark', accentDark);
-        return startAnimation;
-      }
-
-      const startOccasionAnimation = applyOccasionTheme(occasion);
-
-      // ---------- Surprise Screen Interaction ----------
-      surpriseOverlay.addEventListener('click', () => {
-        // Fire initial confetti burst
-        confetti({
-          particleCount: 120,
-          spread: 70,
-          origin: { y: 0.6, x: 0.5 }
-        });
-        // Fade out overlay and show main card
-        surpriseOverlay.style.opacity = '0';
-        setTimeout(() => {
-          surpriseOverlay.style.display = 'none';
-          mainCard.classList.add('opacity-100', 'translate-y-0');
-          mainCard.classList.remove('opacity-0', 'translate-y-8');
-          startOccasionAnimation();
-        }, 1000);
-      });
-
-      // ---------- Continuous Occasion Animations ----------
-      function startBirthday() {
-        setInterval(() => confetti({ particleCount: 20, spread: 45, origin: { y: 0.7, x: Math.random() } }), 3000);
-        setInterval(createFloatingItem('🎈'), 1500);
-      }
-
-      function startDiwali() {
-        const fireworkColors = ['#f39c12', '#e74c3c', '#f1c40f', '#ff6348'];
-        function fireworks() {
-          confetti({
-            particleCount: 80,
-            spread: 100,
-            origin: { x: 0.5, y: 0.4 },
-            angle: 270,
-            startVelocity: 55,
-            colors: fireworkColors,
-            shapes: ['circle', 'star']
-          });
-        }
-        fireworks();
-        setInterval(fireworks, 2500);
-        setInterval(createFloatingItem('🪔'), 2000);
-      }
-
-      function startChristmas() {
-        function createSnow() {
-          const snow = document.createElement('div');
-          snow.className = 'snowflake';
-          snow.textContent = '❄️';
-          snow.style.left = Math.random() * 100 + '%';
-          snow.style.animationDuration = Math.random() * 5 + 5 + 's';
-          snow.style.fontSize = Math.random() * 1.5 + 1 + 'rem';
-          document.body.appendChild(snow);
-          setTimeout(() => snow.remove(), 10000);
-        }
-        setInterval(createSnow, 200);
-        setInterval(() => confetti({ particleCount: 10, spread: 30, origin: { y: 0.2, x: Math.random() }, colors: ['#ffffff'], shapes: ['circle'], gravity: 0.5 }), 4000);
-      }
-
-      function startRomantic() {
-        setInterval(createFloatingItem('❤️'), 1000);
-        setInterval(() => confetti({ particleCount: 15, spread: 35, origin: { y: 0.5, x: Math.random() }, colors: ['#ff758c', '#ff7eb3'], shapes: ['heart'] }), 2500);
-      }
-
-      function startDefault() {
-        setInterval(() => confetti({ particleCount: 15, spread: 40, origin: { y: 0.6, x: Math.random() }, colors: ['#a29bfe', '#6c5ce7'], shapes: ['star'] }), 3000);
-      }
-
-      function createFloatingItem(emoji) {
-        return () => {
-          const item = document.createElement('div');
-          item.className = 'floating-item';
-          item.textContent = emoji;
-          item.style.left = Math.random() * 100 + '%';
-          item.style.animationDuration = Math.random() * 6 + 6 + 's';
-          item.style.fontSize = Math.random() * 2 + 2 + 'rem';
-          document.body.appendChild(item);
-          setTimeout(() => item.remove(), 10000);
+    function setTheme() {
+      const occLower = uOcc.toLowerCase();
+      
+      if (occLower.includes('birthday')) {
+        bgContainer.style.backgroundImage = "url('https://images.unsplash.com/photo-1530103862676-de8892bf3040?q=80&w=2000&auto=format&fit=crop')";
+        activeAnimation = () => {
+          const duration = 15 * 1000;
+          const end = Date.now() + duration;
+          (function frame() {
+            confetti({ particleCount: 4, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#ff0000', '#ffd700'] });
+            confetti({ particleCount: 4, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#ff0000', '#ffd700'] });
+            if (Date.now() < end) requestAnimationFrame(frame);
+          }());
+        };
+      } 
+      else if (occLower.includes('diwali')) {
+        bgContainer.style.backgroundImage = "url('https://images.unsplash.com/photo-1505489435671-80a165c60816?q=80&w=2000&auto=format&fit=crop')";
+        activeAnimation = () => {
+          const duration = 15 * 1000;
+          const end = Date.now() + duration;
+          (function frame() {
+            confetti({ particleCount: 5, spread: 100, origin: { y: Math.random() - 0.2, x: Math.random() }, colors: ['#ff8c00', '#ffd700', '#ffffff'], startVelocity: 30 });
+            if (Date.now() < end) requestAnimationFrame(frame);
+          }());
         };
       }
-
-      // ---------- Custom Audio Player ----------
-      if (audioUrl) {
-        audioPlayerDiv.classList.remove('hidden');
-        audioEl.src = audioUrl;
-        let loading = false;
-
-        function updateTimeDisplay() {
-          if (audioEl.duration) {
-            const percent = (audioEl.currentTime / audioEl.duration) * 100;
-            progressFill.style.width = percent + '%';
-            currentTimeSpan.textContent = formatTime(audioEl.currentTime);
-            durationSpan.textContent = formatTime(audioEl.duration);
-          }
-        }
-
-        function formatTime(sec) {
-          if (isNaN(sec)) return '0:00';
-          const m = Math.floor(sec / 60);
-          const s = Math.floor(sec % 60);
-          return `${m}:${s < 10 ? '0' : ''}${s}`;
-        }
-
-        playBtn.addEventListener('click', () => {
-          audioEl.paused ? audioEl.play() : audioEl.pause();
-        });
-
-        audioEl.addEventListener('play', () => {
-          playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-          loading = false;
-          loadingIndicator.classList.add('hidden');
-        });
-        audioEl.addEventListener('pause', () => {
-          playBtn.innerHTML = '<i class="fas fa-play"></i>';
-        });
-        audioEl.addEventListener('waiting', () => {
-          loading = true;
-          loadingIndicator.classList.remove('hidden');
-          playBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
-        });
-        audioEl.addEventListener('playing', () => {
-          loading = false;
-          loadingIndicator.classList.add('hidden');
-          playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-        });
-        audioEl.addEventListener('timeupdate', updateTimeDisplay);
-        audioEl.addEventListener('loadedmetadata', () => {
-          durationSpan.textContent = formatTime(audioEl.duration);
-        });
-        progressBarContainer.addEventListener('click', (e) => {
-          const rect = progressBarContainer.getBoundingClientRect();
-          const clickX = e.clientX - rect.left;
-          const width = rect.width;
-          if (audioEl.duration) {
-            audioEl.currentTime = (clickX / width) * audioEl.duration;
-          }
-        });
+      else if (occLower.includes('christmas') || occLower.includes('new year')) {
+        bgContainer.style.backgroundImage = "url('https://images.unsplash.com/photo-1512389142860-9c449e58a543?q=80&w=2000&auto=format&fit=crop')";
+        activeAnimation = () => {
+          const duration = 15 * 1000;
+          const end = Date.now() + duration;
+          (function frame() {
+            confetti({ particleCount: 3, spread: 70, origin: { y: -0.1, x: Math.random() }, colors: ['#ffffff'], shapes: ['circle'], gravity: 0.5 });
+            if (Date.now() < end) requestAnimationFrame(frame);
+          }());
+        };
       }
-    })();
+      else if (occLower.includes('anniversary') || occLower.includes('wedding') || occLower.includes('valentine')) {
+        bgContainer.style.backgroundImage = "url('https://images.unsplash.com/photo-1518199268839-49f749445d0b?q=80&w=2000&auto=format&fit=crop')";
+        activeAnimation = () => {
+          confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, colors: ['#ff0040', '#ffb3c6', '#ffffff'] });
+        };
+      }
+      else {
+        // Premium Dark Default
+        bgContainer.style.backgroundImage = "url('https://images.unsplash.com/photo-1557682224-5b8590cd9ec5?q=80&w=2000&auto=format&fit=crop')";
+        activeAnimation = () => {
+          confetti({ particleCount: 100, spread: 90, origin: { y: 0.6 }, colors: ['#d4af37', '#ffffff'] });
+        };
+      }
+    }
+    setTheme();
+
+    // --- 4. Surprise Screen Interaction ---
+    function openSurprise() {
+      const surpriseScreen = document.getElementById('surprise-screen');
+      const mainContent = document.getElementById('main-content');
+      
+      surpriseScreen.style.opacity = '0';
+      setTimeout(() => {
+        surpriseScreen.style.visibility = 'hidden';
+        mainContent.classList.add('visible');
+        if(activeAnimation) activeAnimation();
+      }, 800);
+    }
+
+    // --- 5. Custom Audio Player Logic ---
+    if (uAudio) {
+      const audioContainer = document.getElementById('audio-container');
+      const audioPlayer = document.getElementById('audio-player');
+      const playBtn = document.getElementById('play-btn');
+      const playIcon = document.getElementById('play-icon');
+      const progressContainer = document.getElementById('progress-container');
+      const progressFill = document.getElementById('progress-fill');
+      const timeCurrent = document.getElementById('time-current');
+      const timeTotal = document.getElementById('time-total');
+
+      audioContainer.classList.remove('hidden');
+      audioPlayer.src = uAudio;
+
+      function formatTime(seconds) {
+        if (isNaN(seconds)) return "0:00";
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+      }
+
+      audioPlayer.addEventListener('loadedmetadata', () => {
+        timeTotal.textContent = formatTime(audioPlayer.duration);
+      });
+
+      audioPlayer.addEventListener('timeupdate', () => {
+        const percent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+        progressFill.style.width = `${percent}%`;
+        timeCurrent.textContent = formatTime(audioPlayer.currentTime);
+      });
+
+      playBtn.addEventListener('click', () => {
+        if (audioPlayer.paused) {
+          audioPlayer.play();
+          playIcon.className = 'fas fa-pause';
+        } else {
+          audioPlayer.pause();
+          playIcon.className = 'fas fa-play ml-1';
+        }
+      });
+
+      audioPlayer.addEventListener('waiting', () => {
+        playIcon.className = 'fas fa-spinner fa-spin';
+      });
+
+      audioPlayer.addEventListener('playing', () => {
+        playIcon.className = 'fas fa-pause';
+      });
+
+      progressContainer.addEventListener('click', (e) => {
+        const rect = progressContainer.getBoundingClientRect();
+        const pos = (e.clientX - rect.left) / rect.width;
+        audioPlayer.currentTime = pos * audioPlayer.duration;
+      });
+    }
   </script>
 </body>
 </html>
