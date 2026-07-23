@@ -1,323 +1,491 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-  <title>WishLink Studio · Your Surprise</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <!-- Font Awesome 6 -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <!-- canvas-confetti -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1/dist/confetti.browser.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WishLink Studio · Your Surprise</title>
 
-  <style>
-    :root {
-      --accent: #a78bfa; /* default soft purple */
-      --accent-dark: #7c3aed;
-    }
-    body {
-      font-family: 'Poppins', sans-serif;
-      overflow-x: hidden;
-    }
-    .font-cursive {
-      font-family: 'Great Vibes', cursive;
-    }
-    .text-glow {
-      text-shadow: 0 0 20px rgba(167, 139, 250, 0.4);
-    }
-    /* 3D geometric floating elements */
-    .floating-sphere {
-      position: fixed;
-      border-radius: 50%;
-      opacity: 0.15;
-      background: radial-gradient(circle at 30% 30%, #fff, var(--accent));
-      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-      animation: floatSphere 12s infinite ease-in-out;
-      pointer-events: none;
-      z-index: 1;
-    }
-    @keyframes floatSphere {
-      0%, 100% { transform: translateY(0px) rotate(0deg); }
-      50% { transform: translateY(-30px) rotate(10deg); }
-    }
-    /* Polaroid frame */
-    .polaroid {
-      background: white;
-      padding: 0.8rem 0.8rem 2.5rem 0.8rem;
-      box-shadow: 0 30px 45px rgba(0,0,0,0.15);
-      transform: rotate(-1.5deg);
-      transition: transform 0.3s ease;
-      border-radius: 1rem;
-    }
-    .polaroid:hover {
-      transform: rotate(0deg) scale(1.02);
-    }
-    .polaroid img {
-      width: 100%;
-      height: auto;
-      border-radius: 0.75rem;
-      display: block;
-    }
-    .name-overlay {
-      position: absolute;
-      bottom: 0.3rem;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.6);
-      backdrop-filter: blur(6px);
-      color: white;
-      padding: 0.25rem 1.5rem;
-      border-radius: 9999px;
-      font-size: 1.6rem;
-      white-space: nowrap;
-    }
-    /* Progress bar */
-    .progress-fill {
-      background: linear-gradient(90deg, var(--accent), var(--accent-dark));
-      box-shadow: 0 0 8px var(--accent);
-    }
-    /* Surprise overlay */
-    @keyframes softPulse {
-      0%, 100% { transform: scale(1); opacity: 0.9; }
-      50% { transform: scale(1.05); opacity: 1; }
-    }
-    .gift-icon {
-      animation: softPulse 3s infinite ease-in-out;
-      filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3));
-      color: #f9a8d4; /* soft pink */
-    }
-    /* Audio player custom */
-    .play-btn {
-      transition: all 0.2s;
-    }
-    .play-btn:hover {
-      transform: scale(1.05);
-      background-color: var(--accent-dark);
-    }
-  </style>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1/dist/confetti.browser.min.js"></script>
+
+<style>
+  :root{
+    --bg-a:#F7F4FF; --bg-b:#ECE1FF; --bg-c:#FCEAF9;
+    --ink:#241C38; --ink-body:#4A415F; --ink-soft:#8B82A3;
+    --accent:#8B5CF6; --accent-dark:#6D28D9; --accent-light:#D7C7FF;
+    --gold:#C7A45C; --gold-light:#E9D9AE;
+    --glass:rgba(255,255,255,0.55); --glass-strong:rgba(255,255,255,0.75); --glass-border:rgba(255,255,255,0.65);
+    --shadow-tint: 137,92,246;
+  }
+  html.theme-dark{
+    --bg-a:#170F2B; --bg-b:#221639; --bg-c:#160D24;
+    --ink:#F5F1FF; --ink-body:#D6CCEE; --ink-soft:#9B8FBE;
+    --accent-light:#B79CFF;
+    --gold:#E6C77D; --gold-light:#F2DFA6;
+    --glass:rgba(255,255,255,0.06); --glass-strong:rgba(255,255,255,0.10); --glass-border:rgba(255,255,255,0.16);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{overflow-x:hidden; width:100%; max-width:100%;}
+  body{
+    min-height:100vh; min-height:100dvh;
+    font-family:'Poppins', sans-serif;
+    color:var(--ink-body);
+    background:
+      radial-gradient(ellipse 60% 40% at 50% -5%, rgba(255,255,255,0.9), transparent 60%),
+      linear-gradient(160deg, var(--bg-a), var(--bg-b) 55%, var(--bg-c));
+    position:relative;
+    transition: background .6s ease;
+  }
+  html.theme-dark body{
+    background:
+      radial-gradient(ellipse 60% 40% at 50% -5%, rgba(255,255,255,0.05), transparent 60%),
+      linear-gradient(160deg, var(--bg-a), var(--bg-b) 55%, var(--bg-c));
+  }
+
+  .font-script{ font-family:'Great Vibes', cursive; }
+
+  /* Brand mark */
+  .brand-mark{
+    position:fixed; top:1.25rem; left:1.5rem; z-index:30;
+    display:flex; align-items:center; gap:.5rem;
+    font-weight:600; font-size:.72rem; letter-spacing:.18em; color:var(--ink-soft);
+    opacity:.85;
+  }
+  .brand-mark .dot{ width:6px; height:6px; background:var(--gold); transform:rotate(45deg); flex:none; }
+
+  /* Ambient glass orbs */
+  .orb{ position:fixed; border-radius:9999px; pointer-events:none; z-index:0; filter:blur(2px);
+    background:radial-gradient(circle at 32% 28%, rgba(255,255,255,0.85), var(--accent-light) 45%, transparent 75%);
+    opacity:.35;
+  }
+  html.theme-dark .orb{ opacity:.18; }
+  @media (prefers-reduced-motion:no-preference){
+    .orb{ animation:orbFloat 14s ease-in-out infinite; }
+  }
+  @keyframes orbFloat{
+    0%,100%{ transform:translateY(0) translateX(0) rotate(0deg); }
+    50%{ transform:translateY(-26px) translateX(10px) rotate(8deg); }
+  }
+
+  /* Gold hairline / eyebrow */
+  .hairline-diamond{ width:7px; height:7px; background:var(--gold); transform:rotate(45deg); flex:none;
+    box-shadow:0 0 10px rgba(199,164,92,.5); }
+  .eyebrow{ letter-spacing:.32em; font-size:.72rem; font-weight:600; color:var(--gold); }
+  html.theme-dark .eyebrow{ color:var(--gold-light); }
+  .gold-rule{ width:38px; height:2px; background:linear-gradient(90deg, var(--gold), transparent); }
+
+  /* Name */
+  .name-text{
+    font-family:'Great Vibes', cursive;
+    font-size:clamp(3.2rem, 11vw, 6.4rem);
+    line-height:1.05;
+    color:var(--ink);
+    background:linear-gradient(100deg, var(--ink) 20%, var(--accent-dark) 55%, var(--accent) 80%);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    overflow-wrap:anywhere; word-break:break-word; max-width:100%;
+    text-shadow:0 10px 40px rgba(var(--shadow-tint),.18);
+  }
+
+  /* Keepsake frame */
+  .keepsake-frame{
+    position:relative;
+    background:var(--glass-strong);
+    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border:1px solid var(--glass-border);
+    border-radius:1.75rem;
+    padding:.85rem;
+    box-shadow: 0 40px 70px -25px rgba(var(--shadow-tint),.35), 0 10px 25px -10px rgba(0,0,0,.12);
+    transform:rotate(-1.4deg);
+    transition:transform .5s cubic-bezier(.2,.8,.3,1);
+  }
+  .keepsake-frame:hover{ transform:rotate(0deg) scale(1.015); }
+  .keepsake-frame img{
+    width:100%; height:auto; display:block; border-radius:1.1rem;
+    max-height:60vh; object-fit:cover;
+  }
+  .keepsake-frame::before{
+    content:''; position:absolute; inset:0; border-radius:1.75rem; padding:1px;
+    background:linear-gradient(135deg, var(--gold), transparent 35%, transparent 65%, var(--gold-light));
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor; mask-composite:exclude;
+    opacity:.6; pointer-events:none;
+  }
+  .frame-caption{
+    position:absolute; left:50%; bottom:-.9rem; transform:translateX(-50%);
+    background:var(--glass-strong); backdrop-filter:blur(10px);
+    border:1px solid var(--glass-border);
+    padding:.25rem 1.35rem; border-radius:9999px;
+    font-family:'Great Vibes', cursive; font-size:1.35rem; color:var(--ink);
+    white-space:nowrap; max-width:88%; overflow:hidden; text-overflow:ellipsis;
+    box-shadow:0 12px 25px -10px rgba(0,0,0,.15);
+  }
+
+  /* Message */
+  .message-text{ color:var(--ink-body); font-weight:400; line-height:1.85; font-size:clamp(1.05rem,2.2vw,1.25rem); }
+
+  /* Audio player */
+  .audio-bar{
+    background:var(--glass-strong); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border:1px solid var(--glass-border);
+    box-shadow:0 25px 50px -20px rgba(var(--shadow-tint),.3);
+  }
+  .sphere-btn{
+    background:radial-gradient(circle at 32% 28%, #fff, var(--accent) 55%, var(--accent-dark) 100%);
+    box-shadow:0 10px 20px -6px rgba(var(--shadow-tint),.55), inset 0 1px 2px rgba(255,255,255,.6);
+    transition:transform .2s ease;
+  }
+  .sphere-btn:hover{ transform:scale(1.06); }
+  .sphere-btn:active{ transform:scale(.96); }
+  .progress-track{ height:3px; border-radius:9999px; background:rgba(var(--shadow-tint),.16); position:relative; cursor:pointer; }
+  html.theme-dark .progress-track{ background:rgba(255,255,255,.14); }
+  .progress-fill{ position:absolute; top:0; left:0; height:100%; border-radius:9999px;
+    background:linear-gradient(90deg, var(--accent), var(--gold)); width:0%; }
+  .progress-bead{ position:absolute; top:50%; width:10px; height:10px; border-radius:9999px; background:var(--gold);
+    transform:translate(-50%,-50%); box-shadow:0 0 0 3px rgba(var(--shadow-tint),.15); left:0%; }
+  .spinner{ width:16px; height:16px; border-radius:9999px; border:2px solid rgba(var(--shadow-tint),.2);
+    border-top-color:var(--accent); animation:spin .8s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* Reveal stagger */
+  .reveal-item{ opacity:0; transform:translateY(18px); transition:opacity .7s ease, transform .7s cubic-bezier(.2,.7,.3,1); }
+  #main.revealed .reveal-item{ opacity:1; transform:translateY(0); }
+  #main.revealed .reveal-item:nth-child(1){ transition-delay:.05s; }
+  #main.revealed .reveal-item:nth-child(2){ transition-delay:.15s; }
+  #main.revealed .reveal-item:nth-child(3){ transition-delay:.25s; }
+  #main.revealed .reveal-item:nth-child(4){ transition-delay:.35s; }
+  #main.revealed .reveal-item:nth-child(5){ transition-delay:.45s; }
+
+  /* Surprise overlay */
+  .surprise-overlay{
+    position:fixed; inset:0; z-index:50; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.5), transparent 60%), rgba(20,10,35,.28);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    cursor:pointer; transition:opacity .5s ease .35s; padding:1.5rem; text-align:center;
+  }
+  .surprise-overlay.opened{ opacity:0; pointer-events:none; }
+  .surprise-overlay:focus-visible{ outline:2px solid var(--gold); outline-offset:-6px; }
+
+  .gift-scene{ width:min(48vw, 210px); height:min(48vw, 210px); position:relative; }
+  .gift-scene svg{ width:100%; height:100%; overflow:visible; }
+  #lid, #bow, #glow, .box-core, .sparkles{ transform-box:fill-box; transform-origin:center; }
+  #lid{ transform-origin:50% 100%; }
+
+  .gift-scene.opened #lid{ transition:transform .6s cubic-bezier(.2,.8,.3,1), opacity .5s ease .05s;
+    transform:translate(5px,-52px) rotate(-22deg); opacity:0; }
+  .gift-scene.opened #bow{ transition:transform .45s ease-in, opacity .4s ease-in;
+    transform:scale(0) translateY(-8px) rotate(18deg); opacity:0; }
+  .gift-scene.opened .box-core{ transition:transform .6s ease-in .15s, opacity .6s ease-in .15s;
+    transform:translateY(12px) scale(.86); opacity:0; }
+  .gift-scene.opened .sparkles{ transition:opacity .3s ease; opacity:0; }
+  .gift-scene.opened #glow{ animation:glowBurst .9s ease-out forwards; }
+  @keyframes glowBurst{ 0%{ opacity:0; transform:scale(.4);} 35%{ opacity:.75; transform:scale(1.05);} 100%{ opacity:0; transform:scale(2.3);} }
+
+  @media (prefers-reduced-motion:no-preference){
+    .sparkle{ animation:twinkle 2.6s ease-in-out infinite; }
+  }
+  @keyframes twinkle{ 0%,100%{ opacity:.35; transform:scale(.85);} 50%{ opacity:1; transform:scale(1.1);} }
+
+  .surprise-copy{ margin-top:1.9rem; }
+  .surprise-copy .title{ font-weight:600; font-size:clamp(1.35rem,4.5vw,1.9rem); color:#fff; letter-spacing:.01em;
+    text-shadow:0 4px 18px rgba(0,0,0,.35); }
+  .surprise-copy .sub{ margin-top:.5rem; font-size:.85rem; letter-spacing:.28em; font-weight:500; color:rgba(255,255,255,.85); }
+
+  #main{ position:relative; z-index:10; }
+
+  @media (max-width:767px){
+    .keepsake-frame{ transform:rotate(0deg); }
+  }
+</style>
 </head>
-<body class="min-h-screen flex items-center justify-center relative bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
-  <!-- Floating 3D spheres (decorative) -->
-  <div class="floating-sphere w-64 h-64 -top-20 -left-20" style="animation-delay: 0s; --accent: #c4b5fd;"></div>
-  <div class="floating-sphere w-48 h-48 top-1/3 right-0" style="animation-delay: 4s; --accent: #fbcfe8;"></div>
-  <div class="floating-sphere w-56 h-56 bottom-0 left-1/2" style="animation-delay: 8s; --accent: #ddd6fe;"></div>
+<body>
 
-  <!-- Surprise Overlay -->
-  <div id="surpriseOverlay" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/30 backdrop-blur-sm cursor-pointer transition-all duration-1000">
-    <div class="gift-icon text-8xl">
-      <i class="fas fa-gift"></i>
+<div class="brand-mark" aria-hidden="true"><span class="dot"></span>WISHLINK STUDIO</div>
+
+<div class="orb" style="width:260px;height:260px; top:-90px; left:-90px; animation-delay:0s;"></div>
+<div class="orb" style="width:190px;height:190px; top:22%; right:-70px; animation-delay:4s;"></div>
+<div class="orb" style="width:220px;height:220px; bottom:-80px; left:38%; animation-delay:8s;"></div>
+
+<!-- Surprise overlay -->
+<div id="surprise" class="surprise-overlay" role="button" tabindex="0" aria-label="Open your surprise">
+  <div class="gift-scene" id="giftScene">
+    <svg viewBox="0 0 220 220">
+      <defs>
+        <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:var(--accent-light)"/>
+          <stop offset="55%" style="stop-color:var(--accent)"/>
+          <stop offset="100%" style="stop-color:var(--accent-dark)"/>
+        </linearGradient>
+        <linearGradient id="lidGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#ffffff"/>
+          <stop offset="45%" style="stop-color:var(--accent-light)"/>
+          <stop offset="100%" style="stop-color:var(--accent)"/>
+        </linearGradient>
+        <linearGradient id="ribbonGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:var(--gold-light)"/>
+          <stop offset="100%" style="stop-color:var(--gold)"/>
+        </linearGradient>
+        <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" style="stop-color:var(--accent-light); stop-opacity:.95"/>
+          <stop offset="100%" style="stop-color:var(--accent-light); stop-opacity:0"/>
+        </radialGradient>
+        <filter id="softBlur" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="5"/>
+        </filter>
+      </defs>
+
+      <ellipse cx="110" cy="196" rx="55" ry="9" fill="rgba(20,10,35,.18)" filter="url(#softBlur)"/>
+      <circle id="glow" cx="110" cy="120" r="70" fill="url(#glowGrad)" opacity="0"/>
+
+      <g class="sparkles">
+        <rect class="sparkle" x="26" y="56" width="7" height="7" fill="var(--gold-light)" transform="rotate(45 29.5 59.5)" style="animation-delay:.1s"/>
+        <rect class="sparkle" x="184" y="44" width="6" height="6" fill="var(--gold-light)" transform="rotate(45 187 47)" style="animation-delay:.9s"/>
+        <rect class="sparkle" x="14" y="140" width="6" height="6" fill="var(--gold-light)" transform="rotate(45 17 143)" style="animation-delay:1.5s"/>
+        <rect class="sparkle" x="196" y="132" width="7" height="7" fill="var(--gold-light)" transform="rotate(45 199.5 135.5)" style="animation-delay:.6s"/>
+      </g>
+
+      <g class="box-core">
+        <rect x="55" y="110" width="110" height="75" rx="12" fill="url(#bodyGrad)"/>
+        <rect x="103" y="110" width="14" height="75" fill="url(#ribbonGrad)"/>
+        <ellipse cx="85" cy="126" rx="22" ry="13" fill="#ffffff" opacity=".16"/>
+      </g>
+
+      <g id="lid">
+        <rect x="47" y="92" width="126" height="26" rx="9" fill="url(#lidGrad)"/>
+        <rect x="103" y="92" width="14" height="26" fill="url(#ribbonGrad)"/>
+        <ellipse cx="78" cy="100" rx="24" ry="7" fill="#ffffff" opacity=".22"/>
+      </g>
+
+      <g id="bow">
+        <ellipse cx="91" cy="83" rx="17" ry="12" fill="url(#ribbonGrad)" transform="rotate(-28 91 83)"/>
+        <ellipse cx="129" cy="83" rx="17" ry="12" fill="url(#ribbonGrad)" transform="rotate(28 129 83)"/>
+        <circle cx="110" cy="91" r="9" fill="url(#ribbonGrad)"/>
+      </g>
+    </svg>
+  </div>
+  <div class="surprise-copy">
+    <p class="title">Your Surprise Is Ready</p>
+    <p class="sub">TAP TO OPEN</p>
+  </div>
+</div>
+
+<!-- Main content -->
+<main id="main" class="w-full">
+  <div class="max-w-6xl mx-auto px-6 sm:px-8 md:px-12 py-16 md:py-24">
+    <div id="contentGrid" class="grid md:grid-cols-[1.05fr_0.95fr] gap-14 md:gap-16 items-center">
+
+      <div id="textCol" class="flex flex-col gap-6 text-center md:text-left items-center md:items-start">
+        <div class="reveal-item flex items-center gap-2 justify-center md:justify-start">
+          <span class="hairline-diamond"></span>
+          <span class="eyebrow" id="occasionLabel"></span>
+        </div>
+        <h1 class="name-text reveal-item" id="nameText"></h1>
+        <div class="gold-rule reveal-item"></div>
+        <p class="message-text reveal-item max-w-xl" id="messageText"></p>
+
+        <div id="audioPlayer" class="audio-bar reveal-item hidden items-center gap-4 rounded-full py-3 px-4 w-full max-w-md">
+          <button id="playBtn" type="button" aria-label="Play" class="sphere-btn flex-none rounded-full w-11 h-11 flex items-center justify-center text-white">
+            <svg id="iconPlay" width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M3 1.8v12.4a1 1 0 0 0 1.53.85l9.9-6.2a1 1 0 0 0 0-1.7l-9.9-6.2A1 1 0 0 0 3 1.8Z"/></svg>
+            <svg id="iconPause" width="14" height="14" viewBox="0 0 16 16" fill="currentColor" class="hidden"><rect x="2.5" y="1.5" width="4" height="13" rx="1"/><rect x="9.5" y="1.5" width="4" height="13" rx="1"/></svg>
+            <span id="iconLoading" class="spinner hidden"></span>
+          </button>
+          <div class="flex-1 progress-track" id="progressTrack">
+            <div class="progress-fill" id="progressFill"></div>
+            <div class="progress-bead" id="progressBead"></div>
+          </div>
+          <div class="text-xs font-medium flex-none" style="color:var(--ink-soft)">
+            <span id="currentTime">0:00</span><span class="mx-.5">/</span><span id="duration">0:00</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="frameCol" class="reveal-item flex justify-center hidden">
+        <div class="keepsake-frame w-full max-w-xs md:max-w-sm">
+          <img id="polaroidImg" src="" alt="A keepsake photo">
+          <div class="frame-caption" id="polaroidName"></div>
+        </div>
+      </div>
+
     </div>
-    <p class="text-white text-3xl md:text-4xl font-semibold tracking-wide text-center px-4 mt-6" style="text-shadow: 0 2px 10px rgba(0,0,0,0.5);">
-      Your Surprise is Ready.<br>
-      <span class="text-xl font-normal mt-2 block opacity-90">Tap to Open</span>
+
+    <p class="text-center mt-16 md:mt-20 flex items-center justify-center gap-2 text-[.68rem] tracking-[.2em]" style="color:var(--ink-soft)">
+      <span class="hairline-diamond" style="width:5px;height:5px;"></span>
+      A WISHLINK STUDIO CREATION
     </p>
   </div>
+</main>
 
-  <!-- Main Content (hidden initially) -->
-  <div id="mainContent" class="relative z-10 w-full max-w-7xl mx-auto px-4 py-12 opacity-0 transition-all duration-1000 transform translate-y-6">
-    <div class="flex flex-col md:flex-row items-center justify-between gap-8">
-      <!-- Image Column (Polaroid) -->
-      <div id="imageCol" class="md:w-1/2 w-full flex justify-center mb-8 md:mb-0 hidden">
-        <div class="polaroid relative max-w-xs md:max-w-sm mx-auto">
-          <img id="polaroidImg" src="" alt="Surprise Image">
-          <div class="name-overlay font-cursive" id="polaroidName"></div>
-        </div>
-      </div>
+<audio id="audioEl" preload="auto"></audio>
 
-      <!-- Text & Audio Column -->
-      <div id="textCol" class="md:w-1/2 w-full flex flex-col space-y-6 text-center md:text-left">
-        <p id="occasionText" class="text-lg uppercase tracking-[0.3em] font-semibold" style="color: var(--accent)"></p>
-        <h1 id="nameText" class="font-cursive text-7xl md:text-8xl text-gray-800 text-glow leading-tight"></h1>
-        <p id="messageText" class="text-xl md:text-2xl text-gray-700 leading-relaxed font-medium"></p>
+<script>
+(function(){
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-        <!-- Custom Audio Player -->
-        <div id="audioPlayer" class="hidden mt-6 flex items-center gap-4 bg-white/70 backdrop-blur-lg border border-white/40 rounded-full py-3 px-5 w-full max-w-md mx-auto md:mx-0 shadow-xl shadow-purple-200/50">
-          <button id="playBtn" class="play-btn rounded-full w-12 h-12 flex items-center justify-center text-2xl text-white shadow-md" style="background-color: var(--accent);">
-            <i class="fas fa-play"></i>
-          </button>
-          <div class="flex-1 h-2 bg-gray-200 rounded-full cursor-pointer relative overflow-hidden" id="progressBarContainer">
-            <div class="absolute top-0 left-0 h-full rounded-full progress-fill transition-all duration-150" id="progressFill" style="width:0%"></div>
-          </div>
-          <div class="text-gray-700 text-sm font-semibold flex items-center gap-1">
-            <span id="currentTime">0:00</span><span>/</span><span id="duration">0:00</span>
-          </div>
-          <div id="loadingIndicator" class="hidden text-gray-600 text-sm ml-2">
-            <i class="fas fa-spinner fa-pulse"></i> Loading...
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  // ---------- Parse & validate ----------
+  const params = new URLSearchParams(window.location.search);
+  const name = params.get('name');
+  const msg = params.get('msg');
+  if (!name || !msg) {
+    window.location.href = 'https://example.com';
+    return;
+  }
+  const occasionRaw = (params.get('occ') || 'custom').trim();
+  const theme = (params.get('theme') || '').trim().toLowerCase();
+  const imgUrl = params.get('img');
+  const audioUrl = params.get('audio');
 
-  <!-- Hidden Audio -->
-  <audio id="audioElement" preload="auto"></audio>
+  // ---------- Theme (dark/light) ----------
+  if (['dark','midnight','night','elegant-dark'].includes(theme)) {
+    document.documentElement.classList.add('theme-dark');
+  }
 
-  <script>
-    (function() {
-      // ---------- URL Parsing & Redirect ----------
-      const params = new URLSearchParams(window.location.search);
-      const name = params.get('name');
-      const msg = params.get('msg');
-      if (!name || !msg) {
-        window.location.href = 'https://example.com';
-        return;
+  // ---------- Occasion engine ----------
+  const occasionMap = {
+    'birthday':          { accent:'#C084FC', accentDark:'#9333EA', label:'A BIRTHDAY WISH' },
+    'anniversary':       { accent:'#F472B6', accentDark:'#DB2777', label:'AN ANNIVERSARY WISH' },
+    'wedding':           { accent:'#F0ABFC', accentDark:'#C026D3', label:'A WEDDING WISH' },
+    "valentine's day":   { accent:'#FB7185', accentDark:'#E11D48', label:'WITH LOVE' },
+    'graduation':        { accent:'#818CF8', accentDark:'#4F46E5', label:'A GRADUATION WISH' },
+    'farewell':          { accent:'#2DD4BF', accentDark:'#0D9488', label:'A FAREWELL NOTE' },
+    "mother's day":      { accent:'#FB7185', accentDark:'#E11D48', label:'FOR A WONDERFUL MOTHER' },
+    "father's day":      { accent:'#60A5FA', accentDark:'#2563EB', label:'FOR A WONDERFUL FATHER' },
+    'diwali':            { accent:'#FBBF24', accentDark:'#D97706', label:'HAPPY DIWALI' },
+    'pongal':            { accent:'#FACC15', accentDark:'#CA8A04', label:'HAPPY PONGAL' },
+    'eid':                { accent:'#34D399', accentDark:'#059669', label:'EID MUBARAK' },
+    'christmas':         { accent:'#F87171', accentDark:'#B91C1C', label:'MERRY CHRISTMAS' },
+    'new year':           { accent:'#A78BFA', accentDark:'#7C3AED', label:'HAPPY NEW YEAR' },
+    'congratulations':   { accent:'#2DD4BF', accentDark:'#0F766E', label:'CONGRATULATIONS' },
+    'get well soon':     { accent:'#38BDF8', accentDark:'#0284C7', label:'GET WELL SOON' },
+    'custom':            { accent:'#8B5CF6', accentDark:'#6D28D9', label:'A SPECIAL WISH FOR YOU' }
+  };
+  const occKey = Object.keys(occasionMap).find(k => k === occasionRaw.toLowerCase()) || 'custom';
+  const palette = occasionMap[occKey];
+  const root = document.documentElement.style;
+  root.setProperty('--accent', palette.accent);
+  root.setProperty('--accent-dark', palette.accentDark);
+
+  // ---------- Populate content ----------
+  document.getElementById('occasionLabel').textContent = palette.label;
+  document.getElementById('nameText').textContent = name;
+  document.getElementById('messageText').textContent = msg;
+  document.getElementById('polaroidName').textContent = name;
+
+  const frameCol = document.getElementById('frameCol');
+  const contentGrid = document.getElementById('contentGrid');
+  const polaroidImg = document.getElementById('polaroidImg');
+
+  function collapseFrame(){
+    frameCol.classList.add('hidden');
+    contentGrid.classList.remove('md:grid-cols-[1.05fr_0.95fr]');
+    contentGrid.classList.add('md:grid-cols-1', 'max-w-2xl', 'mx-auto');
+  }
+
+  if (imgUrl) {
+    frameCol.classList.remove('hidden');
+    polaroidImg.addEventListener('error', collapseFrame, { once:true });
+    polaroidImg.src = imgUrl;
+  } else {
+    collapseFrame();
+  }
+
+  // ---------- Audio player ----------
+  const audioUrlTrimmed = audioUrl ? audioUrl.trim() : '';
+  const audioPlayer = document.getElementById('audioPlayer');
+  const audioEl = document.getElementById('audioEl');
+  const playBtn = document.getElementById('playBtn');
+  const iconPlay = document.getElementById('iconPlay');
+  const iconPause = document.getElementById('iconPause');
+  const iconLoading = document.getElementById('iconLoading');
+  const progressTrack = document.getElementById('progressTrack');
+  const progressFill = document.getElementById('progressFill');
+  const progressBead = document.getElementById('progressBead');
+  const currentTimeEl = document.getElementById('currentTime');
+  const durationEl = document.getElementById('duration');
+
+  function formatTime(sec){
+    if (!isFinite(sec) || isNaN(sec)) return '0:00';
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function setBtnState(state){
+    iconPlay.classList.toggle('hidden', state !== 'play');
+    iconPause.classList.toggle('hidden', state !== 'pause');
+    iconLoading.classList.toggle('hidden', state !== 'loading');
+  }
+
+  if (audioUrlTrimmed) {
+    audioPlayer.classList.remove('hidden');
+    audioPlayer.classList.add('flex');
+    audioEl.src = audioUrlTrimmed;
+    setBtnState('play');
+
+    audioEl.addEventListener('error', () => {
+      audioPlayer.classList.add('hidden');
+      audioPlayer.classList.remove('flex');
+    }, { once:true });
+
+    playBtn.addEventListener('click', () => {
+      if (audioEl.paused) audioEl.play().catch(()=>{}); else audioEl.pause();
+    });
+    audioEl.addEventListener('play', () => setBtnState('pause'));
+    audioEl.addEventListener('pause', () => { if (!audioEl.ended) setBtnState('play'); });
+    audioEl.addEventListener('ended', () => setBtnState('play'));
+    audioEl.addEventListener('waiting', () => setBtnState('loading'));
+    audioEl.addEventListener('playing', () => setBtnState('pause'));
+    audioEl.addEventListener('loadedmetadata', () => { durationEl.textContent = formatTime(audioEl.duration); });
+    audioEl.addEventListener('timeupdate', () => {
+      if (audioEl.duration) {
+        const pct = (audioEl.currentTime / audioEl.duration) * 100;
+        progressFill.style.width = pct + '%';
+        progressBead.style.left = pct + '%';
+        currentTimeEl.textContent = formatTime(audioEl.currentTime);
       }
-      const occasion = params.get('occ') || 'Custom';
-      const theme = params.get('theme') || '';
-      const imgUrl = params.get('img') || null;
-      const audioUrl = params.get('audio') || null;
+    });
+    progressTrack.addEventListener('click', (e) => {
+      const rect = progressTrack.getBoundingClientRect();
+      const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+      if (audioEl.duration) audioEl.currentTime = ratio * audioEl.duration;
+    });
+  }
 
-      // ---------- DOM Elements ----------
-      const body = document.body;
-      const surpriseOverlay = document.getElementById('surpriseOverlay');
-      const mainContent = document.getElementById('mainContent');
-      const imageCol = document.getElementById('imageCol');
-      const polaroidImg = document.getElementById('polaroidImg');
-      const polaroidName = document.getElementById('polaroidName');
-      const occasionText = document.getElementById('occasionText');
-      const nameText = document.getElementById('nameText');
-      const messageText = document.getElementById('messageText');
-      const audioPlayerDiv = document.getElementById('audioPlayer');
-      const audioEl = document.getElementById('audioElement');
-      const playBtn = document.getElementById('playBtn');
-      const progressFill = document.getElementById('progressFill');
-      const progressBarContainer = document.getElementById('progressBarContainer');
-      const currentTimeSpan = document.getElementById('currentTime');
-      const durationSpan = document.getElementById('duration');
-      const loadingIndicator = document.getElementById('loadingIndicator');
+  // ---------- Surprise interaction ----------
+  const surprise = document.getElementById('surprise');
+  const giftScene = document.getElementById('giftScene');
+  const main = document.getElementById('main');
 
-      // ---------- Populate Data ----------
-      polaroidName.textContent = name;
-      nameText.textContent = name;
-      occasionText.textContent = occasion.toUpperCase();
-      messageText.textContent = msg;
+  function openSurprise(){
+    if (surprise.classList.contains('opened')) return;
+    giftScene.classList.add('opened');
+    surprise.classList.add('opened');
 
-      if (imgUrl) {
-        imageCol.classList.remove('hidden');
-        polaroidImg.src = imgUrl;
-      } else {
-        // If no image, make text column full width and center
-        document.getElementById('textCol').classList.remove('md:w-1/2');
-        document.getElementById('textCol').classList.add('md:w-full', 'text-center', 'items-center');
-      }
-
-      // ---------- Dynamic Occasion Theme ----------
-      const occasionPalette = {
-        'birthday': { gradient: 'from-purple-100 via-pink-50 to-yellow-50', accent: '#c084fc', accentDark: '#a855f7' },
-        'anniversary': { gradient: 'from-rose-100 via-pink-50 to-amber-50', accent: '#f472b6', accentDark: '#db2777' },
-        'wedding': { gradient: 'from-pink-100 via-rose-50 to-indigo-50', accent: '#f9a8d4', accentDark: '#ec4899' },
-        'valentine\'s day': { gradient: 'from-red-50 via-pink-100 to-rose-200', accent: '#f43f5e', accentDark: '#be123c' },
-        'graduation': { gradient: 'from-blue-50 via-indigo-100 to-purple-100', accent: '#6366f1', accentDark: '#4f46e5' },
-        'farewell': { gradient: 'from-teal-50 via-cyan-100 to-blue-100', accent: '#0d9488', accentDark: '#0f766e' },
-        "mother's day": { gradient: 'from-pink-50 via-rose-100 to-orange-50', accent: '#f43f5e', accentDark: '#be123c' },
-        "father's day": { gradient: 'from-sky-50 via-blue-100 to-indigo-100', accent: '#3b82f6', accentDark: '#1d4ed8' },
-        'diwali': { gradient: 'from-amber-50 via-yellow-100 to-orange-50', accent: '#f59e0b', accentDark: '#b45309' },
-        'pongal': { gradient: 'from-yellow-50 via-amber-100 to-green-50', accent: '#eab308', accentDark: '#a16207' },
-        'eid': { gradient: 'from-green-50 via-emerald-100 to-teal-100', accent: '#10b981', accentDark: '#047857' },
-        'christmas': { gradient: 'from-red-50 via-rose-100 to-green-50', accent: '#dc2626', accentDark: '#991b1b' },
-        'new year': { gradient: 'from-violet-50 via-purple-100 to-fuchsia-100', accent: '#8b5cf6', accentDark: '#6d28d9' },
-        'congratulations': { gradient: 'from-emerald-50 via-teal-100 to-cyan-100', accent: '#14b8a6', accentDark: '#0f766e' },
-        'get well soon': { gradient: 'from-cyan-50 via-sky-100 to-blue-100', accent: '#0ea5e9', accentDark: '#0369a1' },
-        'custom': { gradient: 'from-indigo-50 via-purple-50 to-pink-100', accent: '#a78bfa', accentDark: '#7c3aed' }
-      };
-
-      const occKey = Object.keys(occasionPalette).find(k => k === occasion.toLowerCase()) || 'custom';
-      const palette = occasionPalette[occKey];
-
-      // Apply gradient background and accent colors
-      body.className = `min-h-screen flex items-center justify-center relative overflow-x-hidden bg-gradient-to-br ${palette.gradient}`;
-      document.documentElement.style.setProperty('--accent', palette.accent);
-      document.documentElement.style.setProperty('--accent-dark', palette.accentDark);
-
-      // Update floating spheres colors based on accent
-      const spheres = document.querySelectorAll('.floating-sphere');
-      if (spheres.length > 0) {
-        spheres[0].style.setProperty('--accent', palette.accentDark);
-        spheres[1].style.setProperty('--accent', palette.accent);
-        spheres[2].style.setProperty('--accent', palette.accentDark);
-      }
-
-      // ---------- Surprise Interaction ----------
-      surpriseOverlay.addEventListener('click', () => {
-        // Soft confetti burst
-        confetti({
-          particleCount: 100,
-          spread: 60,
-          origin: { y: 0.6, x: 0.5 },
-          colors: [palette.accent, palette.accentDark, '#f9a8d4', '#e9d5ff']
-        });
-        // Fade out overlay
-        surpriseOverlay.style.opacity = '0';
-        setTimeout(() => {
-          surpriseOverlay.style.display = 'none';
-          mainContent.style.opacity = '1';
-          mainContent.style.transform = 'translateY(0)';
-        }, 1000);
+    if (!reduceMotion && window.confetti) {
+      confetti({
+        particleCount: 70,
+        spread: 65,
+        startVelocity: 32,
+        gravity: 0.9,
+        origin: { y: 0.55, x: 0.5 },
+        colors: [palette.accent, palette.accentDark, '#F5E6C8', '#FFFFFF']
       });
+    }
 
-      // ---------- Custom Audio Player ----------
-      if (audioUrl) {
-        audioPlayerDiv.classList.remove('hidden');
-        audioEl.src = audioUrl;
-        let loading = false;
+    const delay = reduceMotion ? 120 : 780;
+    setTimeout(() => {
+      surprise.style.display = 'none';
+      main.classList.add('revealed');
+    }, delay);
+  }
 
-        function updateTimeDisplay() {
-          if (audioEl.duration) {
-            const percent = (audioEl.currentTime / audioEl.duration) * 100;
-            progressFill.style.width = percent + '%';
-            currentTimeSpan.textContent = formatTime(audioEl.currentTime);
-            durationSpan.textContent = formatTime(audioEl.duration);
-          }
-        }
-
-        function formatTime(sec) {
-          if (isNaN(sec)) return '0:00';
-          const m = Math.floor(sec / 60);
-          const s = Math.floor(sec % 60);
-          return `${m}:${s < 10 ? '0' : ''}${s}`;
-        }
-
-        playBtn.addEventListener('click', () => {
-          audioEl.paused ? audioEl.play() : audioEl.pause();
-        });
-
-        audioEl.addEventListener('play', () => {
-          playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-          loading = false;
-          loadingIndicator.classList.add('hidden');
-        });
-        audioEl.addEventListener('pause', () => {
-          playBtn.innerHTML = '<i class="fas fa-play"></i>';
-        });
-        audioEl.addEventListener('waiting', () => {
-          loading = true;
-          loadingIndicator.classList.remove('hidden');
-          playBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
-        });
-        audioEl.addEventListener('playing', () => {
-          loading = false;
-          loadingIndicator.classList.add('hidden');
-          playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-        });
-        audioEl.addEventListener('timeupdate', updateTimeDisplay);
-        audioEl.addEventListener('loadedmetadata', () => {
-          durationSpan.textContent = formatTime(audioEl.duration);
-        });
-        progressBarContainer.addEventListener('click', (e) => {
-          const rect = progressBarContainer.getBoundingClientRect();
-          const clickX = e.clientX - rect.left;
-          const width = rect.width;
-          if (audioEl.duration) {
-            audioEl.currentTime = (clickX / width) * audioEl.duration;
-          }
-        });
-      }
-    })();
-  </script>
+  surprise.addEventListener('click', openSurprise);
+  surprise.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSurprise(); }
+  });
+})();
+</script>
 </body>
 </html>
