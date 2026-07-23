@@ -26,7 +26,7 @@
       margin: 0;
       padding: 0;
       overflow-x: hidden;
-      background-color: #050505;
+      background-color: #111; /* Fallback dark color */
       color: #ffffff;
     }
 
@@ -34,7 +34,7 @@
       font-family: 'Great Vibes', cursive;
     }
 
-    /* Dynamic Background */
+    /* Dynamic Background Container */
     #bg-container {
       position: fixed;
       top: 0;
@@ -43,8 +43,9 @@
       height: 100vh;
       background-size: cover;
       background-position: center;
+      background-repeat: no-repeat;
       z-index: -2;
-      transition: background-image 1s ease-in-out;
+      transition: background 1s ease-in-out;
     }
 
     /* Dark Overlay for Text Readability */
@@ -56,6 +57,7 @@
       height: 100vh;
       background: rgba(0, 0, 0, 0.6);
       backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       z-index: -1;
     }
 
@@ -155,7 +157,7 @@
   <div id="bg-overlay"></div>
 
   <!-- Surprise / Loading Screen -->
-  <div id="surprise-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-xl">
+  <div id="surprise-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/95 backdrop-blur-xl">
     <div class="cursor-pointer text-center group" onclick="openSurprise()">
       <i class="fas fa-gift text-8xl text-yellow-500 gift-bounce mb-8 group-hover:text-yellow-300 transition-colors"></i>
       <h2 class="text-3xl md:text-5xl font-semibold tracking-wider text-white glow-text">Your Surprise is Ready!</h2>
@@ -245,15 +247,20 @@
       textContainer.classList.add('lg:text-center', 'items-center');
     }
 
-    // --- 3. Dynamic Themes Engine ---
+    // --- 3. Dynamic Themes Engine (WITH SOLID FALLBACKS) ---
     const bgContainer = document.getElementById('bg-container');
     let activeAnimation = null;
 
     function setTheme() {
       const occLower = uOcc.toLowerCase();
       
+      // Fallback colors ensures no black screen even if image fails or loads slow
+      let fallbackColor = "#111111"; 
+      let bgImageUrl = "";
+
       if (occLower.includes('birthday')) {
-        bgContainer.style.backgroundImage = "url('https://images.unsplash.com/photo-1530103862676-de8892bf3040?q=80&w=2000&auto=format&fit=crop')";
+        fallbackColor = "linear-gradient(135deg, #2a0845, #6441A5)";
+        bgImageUrl = "https://images.unsplash.com/photo-1530103862676-de8892bf3040?q=80&w=1200&auto=format&fit=crop";
         activeAnimation = () => {
           const duration = 15 * 1000;
           const end = Date.now() + duration;
@@ -265,7 +272,8 @@
         };
       } 
       else if (occLower.includes('diwali')) {
-        bgContainer.style.backgroundImage = "url('https://images.unsplash.com/photo-1505489435671-80a165c60816?q=80&w=2000&auto=format&fit=crop')";
+        fallbackColor = "linear-gradient(135deg, #3E0000, #FF4500)";
+        bgImageUrl = "https://images.unsplash.com/photo-1505489435671-80a165c60816?q=80&w=1200&auto=format&fit=crop";
         activeAnimation = () => {
           const duration = 15 * 1000;
           const end = Date.now() + duration;
@@ -276,7 +284,8 @@
         };
       }
       else if (occLower.includes('christmas') || occLower.includes('new year')) {
-        bgContainer.style.backgroundImage = "url('https://images.unsplash.com/photo-1512389142860-9c449e58a543?q=80&w=2000&auto=format&fit=crop')";
+        fallbackColor = "linear-gradient(135deg, #0f2027, #203a43)";
+        bgImageUrl = "https://images.unsplash.com/photo-1512389142860-9c449e58a543?q=80&w=1200&auto=format&fit=crop";
         activeAnimation = () => {
           const duration = 15 * 1000;
           const end = Date.now() + duration;
@@ -287,18 +296,25 @@
         };
       }
       else if (occLower.includes('anniversary') || occLower.includes('wedding') || occLower.includes('valentine')) {
-        bgContainer.style.backgroundImage = "url('https://images.unsplash.com/photo-1518199268839-49f749445d0b?q=80&w=2000&auto=format&fit=crop')";
+        fallbackColor = "linear-gradient(135deg, #4a0e1c, #801336)";
+        bgImageUrl = "https://images.unsplash.com/photo-1518199268839-49f749445d0b?q=80&w=1200&auto=format&fit=crop";
         activeAnimation = () => {
           confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, colors: ['#ff0040', '#ffb3c6', '#ffffff'] });
         };
       }
       else {
         // Premium Dark Default
-        bgContainer.style.backgroundImage = "url('https://images.unsplash.com/photo-1557682224-5b8590cd9ec5?q=80&w=2000&auto=format&fit=crop')";
+        fallbackColor = "linear-gradient(135deg, #141e30, #243b55)";
+        bgImageUrl = "https://images.unsplash.com/photo-1557682224-5b8590cd9ec5?q=80&w=1200&auto=format&fit=crop";
         activeAnimation = () => {
           confetti({ particleCount: 100, spread: 90, origin: { y: 0.6 }, colors: ['#d4af37', '#ffffff'] });
         };
       }
+
+      // Apply the fallback gradient AND the image. 
+      // If image loads, it covers the gradient. If slow, gradient shows instantly!
+      bgContainer.style.background = `${fallbackColor}`;
+      bgContainer.style.backgroundImage = `url('${bgImageUrl}')`;
     }
     setTheme();
 
