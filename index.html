@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <title>Your Surprise ✨</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- canvas-confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1/dist/confetti.browser.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ---------- INITIAL SURPRISE SCREEN ---------- */
+    #initial-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(ellipse at center, #2d1b4e 0%, #0f0f1a 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      transition: opacity 0.8s ease, visibility 0.8s ease;
+      opacity: 1;
+      visibility: visible;
+    }
+
+    #initial-screen.fade-out {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .surprise-icon {
+      font-size: 5rem;
+      color: #ffd700;
+      animation: bounce 2s infinite, glow 2s infinite alternate;
+      margin-bottom: 1rem;
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+
+    .surprise-icon:hover {
+      transform: scale(1.1);
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+
+    @keyframes glow {
+      from { text-shadow: 0 0 10px #ffd700, 0 0 20px #ff8c00; }
+      to { text-shadow: 0 0 20px #ffd700, 0 0 30px #ff4500; }
+    }
+
+    .loading-text {
+      color: #fff;
+      font-size: 1.4rem;
+      font-weight: 300;
+      margin-top: 1rem;
+      letter-spacing: 2px;
+      transition: all 0.3s;
+    }
+
+    /* ---------- MAIN CARD ---------- */
+    #main-card {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+      width: 95%;
+      max-width: 600px;
+      margin: 2rem auto;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 2.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 80px rgba(255, 215, 0, 0.1);
+      padding: 2rem 1.8rem;
+      color: #fff;
+      text-align: center;
+      transition: all 0.3s ease;
+      display: none;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    #main-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+      display: flex;
+    }
+
+    /* Card internal styling */
+    .card-image {
+      width: 100%;
+      max-height: 280px;
+      object-fit: cover;
+      border-radius: 2rem;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+      border: 2px solid rgba(255,255,255,0.25);
+    }
+
+    .occasion-text {
+      font-size: 1.2rem;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--secondary-color, #feca57);
+      margin-bottom: -0.5rem;
+    }
+
+    .recipient-name {
+      font-family: 'Great Vibes', cursive;
+      font-size: 3.5rem;
+      color: var(--primary-color, #ffd700);
+      text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+      margin-top: -0.2rem;
+      line-height: 1.1;
+    }
+
+    .message-text {
+      font-size: 1.15rem;
+      font-weight: 300;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.9);
+      background: rgba(0, 0, 0, 0.25);
+      padding: 1.2rem;
+      border-radius: 1.5rem;
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    /* ---------- CUSTOM AUDIO PLAYER ---------- */
+    .audio-player {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+      padding: 0.8rem 1.2rem;
+      border-radius: 3rem;
+      margin-top: 0.5rem;
+      border: 1px solid rgba(255,255,255,0.2);
+      width: 100%;
+    }
+
+    .play-btn {
+      background: var(--primary-color, #ffd700);
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      color: #1a1a2e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s, background 0.2s;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      flex-shrink: 0;
+    }
+
+    .play-btn:hover {
+      transform: scale(1.05);
+      background: var(--secondary-color, #feca57);
+    }
+
+    .progress-container {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 3px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--secondary-color, #feca57);
+      border-radius: 3px;
+      transition: width 0.1s linear;
+    }
+
+    .time-display {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.8);
+      min-width: 45px;
+      text-align: right;
+      font-weight: 300;
+    }
+
+    .loading-indicator {
+      display: none;
+      align-items: center;
+      gap: 0.3rem;
+      color: rgba(255,255,255,0.9);
+      font-size: 0.8rem;
+      margin-left: 0.2rem;
+    }
+
+    .loading-indicator i {
+      font-size: 1rem;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 500px) {
+      #main-card {
+        padding: 1.5rem 1.2rem;
+      }
+      .recipient-name {
+        font-size: 2.8rem;
+      }
+      .audio-player {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .progress-container {
+        width: 100%;
+        order: 2;
+        margin-top: 0.4rem;
+      }
+      .time-display {
+        order: 3;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Redirect logic: must be first -->
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      if (!params.get('name') || !params.get('msg')) {
+        window.location.replace('https://example.com');
+        return;
+      }
+    })();
+  </script>
+
+  <!-- INITIAL SURPRISE SCREEN -->
+  <div id="initial-screen">
+    <i class="fas fa-gift surprise-icon" id="giftIcon"></i>
+    <div class="loading-text" id="surpriseText">Your Surprise is Loading...</div>
+  </div>
+
+  <!-- MAIN GREETING CARD -->
+  <div id="main-card">
+    <!-- Image (if provided) -->
+    <img id="cardImage" class="card-image" src="" alt="Surprise Image" style="display: none;">
+
+    <!-- Occasion -->
+    <div class="occasion-text" id="occasionDisplay"></div>
+
+    <!-- Recipient Name -->
+    <h1 class="recipient-name" id="nameDisplay"></h1>
+
+    <!-- Message -->
+    <div class="message-text" id="messageDisplay"></div>
+
+    <!-- Custom Audio Player (if audio exists) -->
+    <div class="audio-player" id="audioPlayer" style="display: none;">
+      <button class="play-btn" id="playPauseBtn">
+        <i class="fas fa-play"></i>
+      </button>
+      <div class="progress-container" id="progressContainer">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <span class="time-display" id="timeDisplay">00:00</span>
+      <div class="loading-indicator" id="loadingIndicator">
+        <i class="fas fa-spinner fa-pulse"></i> Loading audio...
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden audio element -->
+  <audio id="audioElement" preload="auto"></audio>
+
+  <script>
+    (function() {
+      // ---------- PARAMETERS ----------
+      const params = new URLSearchParams(window.location.search);
+      const name = params.get('name') || 'Friend';
+      const occasion = params.get('occ') || 'Special Day';
+      const theme = params.get('theme') || 'Neutral';
+      const message = params.get('msg') || '';
+      const imageUrl = params.get('img') || null;
+      const audioUrl = params.get('audio') || null;
+
+      // ---------- ACCENT COLORS BASED ON OCCASION / THEME ----------
+      const colorMap = {
+        birthday: { primary: '#ff6b6b', secondary: '#feca57' },
+        anniversary: { primary: '#ff9ff3', secondary: '#f368e0' },
+        wedding: { primary: '#d4af37', secondary: '#f5e6cc' },
+        graduation: { primary: '#2c3e50', secondary: '#f39c12' },
+        farewell: { primary: '#8e44ad', secondary: '#e67e22' },
+        "valentine's day": { primary: '#e84393', secondary: '#fd79a8' },
+        "mother's day": { primary: '#e17055', secondary: '#fab1a0' },
+        "father's day": { primary: '#2d3436', secondary: '#636e72' },
+        diwali: { primary: '#f39c12', secondary: '#e74c3c' },
+        pongal: { primary: '#e67e22', secondary: '#f1c40f' },
+        eid: { primary: '#27ae60', secondary: '#f1c40f' },
+        christmas: { primary: '#c0392b', secondary: '#27ae60' },
+        "new year": { primary: '#f1c40f', secondary: '#e74c3c' },
+        congratulations: { primary: '#2ecc71', secondary: '#3498db' },
+        "get well soon": { primary: '#1abc9c', secondary: '#f39c12' }
+      };
+
+      // Theme influence
+      const themeColor = {
+        'girl theme': { primary: '#ff6b9d', secondary: '#c44569' },
+        'boy theme': { primary: '#54a0ff', secondary: '#2e86de' },
+        'both/neutral': { primary: '#a29bfe', secondary: '#6c5ce7' }
+      };
+
+      let accent = colorMap[occasion.toLowerCase()] || { primary: '#ffd700', secondary: '#feca57' };
+      // Blend with theme if present
+      const themeAccent = themeColor[theme.toLowerCase()];
+      if (themeAccent) {
+        accent = {
+          primary: themeAccent.primary,
+          secondary: themeAccent.secondary
+        };
+      }
+
+      // Apply accent as CSS variables to the card
+      const card = document.getElementById('main-card');
+      card.style.setProperty('--primary-color', accent.primary);
+      card.style.setProperty('--secondary-color', accent.secondary);
+
+      // ---------- DOM ELEMENTS ----------
+      const initialScreen = document.getElementById('initial-screen');
+      const giftIcon = document.getElementById('giftIcon');
+      const surpriseText = document.getElementById('surpriseText');
+      const mainCard = document.getElementById('main-card');
+      const occasionDisplay = document.getElementById('occasionDisplay');
+      const nameDisplay = document.getElementById('nameDisplay');
+      const messageDisplay = document.getElementById('messageDisplay');
+      const cardImage = document.getElementById('cardImage');
+      const audioPlayerDiv = document.getElementById('audioPlayer');
+      const audioElement = document.getElementById('audioElement');
+
+      // Display data
+      occasionDisplay.textContent = occasion.toUpperCase();
+      nameDisplay.textContent = name;
+      messageDisplay.textContent = message;
+
+      // Image handling
+      if (imageUrl) {
+        cardImage.src = imageUrl;
+        cardImage.style.display = 'block';
+      }
+
+      // Audio handling
+      if (audioUrl) {
+        audioElement.src = audioUrl;
+        audioPlayerDiv.style.display = 'flex';
+        setupAudioPlayer();
+      }
+
+      // ---------- INITIAL SCREEN ANIMATION ----------
+      setTimeout(() => {
+        surpriseText.textContent = 'Tap to Open!';
+        surpriseText.style.fontWeight = '600';
+        giftIcon.style.cursor = 'pointer';
+      }, 2000);
+
+      function openSurprise() {
+        // Confetti burst
+        confetti({
+          particleCount: 150,
+          spread: 100,
+          origin: { y: 0.5, x: 0.5 },
+          colors: ['#ffd700', '#ff6b6b', '#54a0ff', '#a29bfe', '#feca57']
+        });
+        setTimeout(() => {
+          confetti({
+            particleCount: 80,
+            angle: 60,
+            spread: 70,
+            origin: { x: 0 }
+          });
+          confetti({
+            particleCount: 80,
+            angle: 120,
+            spread: 70,
+            origin: { x: 1 }
+          });
+        }, 150);
+
+        // Fade out initial screen
+        initialScreen.classList.add('fade-out');
+        // After transition, show main card
+        setTimeout(() => {
+          mainCard.classList.add('visible');
+        }, 800); // matches CSS transition
+      }
+
+      giftIcon.addEventListener('click', openSurprise);
+
+      // ---------- CUSTOM AUDIO PLAYER LOGIC ----------
+      function setupAudioPlayer() {
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const progressFill = document.getElementById('progressFill');
+        const progressContainer = document.getElementById('progressContainer');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
+        let isLoading = false;
+
+        function formatTime(seconds) {
+          if (isNaN(seconds)) return '00:00';
+          const mins = Math.floor(seconds / 60);
+          const secs = Math.floor(seconds % 60);
+          return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function updateProgress() {
+          if (audioElement.duration) {
+            const progress = (audioElement.currentTime / audioElement.duration) * 100;
+            progressFill.style.width = `${progress}%`;
+            timeDisplay.textContent = `${formatTime(audioElement.currentTime)} / ${formatTime(audioElement.duration)}`;
+          }
+        }
+
+        function togglePlay() {
+          if (audioElement.paused) {
+            audioElement.play();
+          } else {
+            audioElement.pause();
+          }
+        }
+
+        audioElement.addEventListener('play', () => {
+          playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+          isLoading = false;
+          loadingIndicator.style.display = 'none';
+        });
+
+        audioElement.addEventListener('pause', () => {
+          playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+        });
+
+        audioElement.addEventListener('waiting', () => {
+          isLoading = true;
+          loadingIndicator.style.display = 'flex';
+          playPauseBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
+        });
+
+        audioElement.addEventListener('playing', () => {
+          isLoading = false;
+          loadingIndicator.style.display = 'none';
+          playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        });
+
+        audioElement.addEventListener('timeupdate', updateProgress);
+        audioElement.addEventListener('ended', () => {
+          playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+          progressFill.style.width = '0%';
+          timeDisplay.textContent = `00:00 / ${formatTime(audioElement.duration)}`;
+        });
+
+        // Seek in progress bar
+        progressContainer.addEventListener('click', (e) => {
+          const rect = progressContainer.getBoundingClientRect();
+          const clickX = e.clientX - rect.left;
+          const width = rect.width;
+          if (audioElement.duration) {
+            audioElement.currentTime = (clickX / width) * audioElement.duration;
+          }
+        });
+
+        playPauseBtn.addEventListener('click', togglePlay);
+
+        // Initial time display
+        audioElement.addEventListener('loadedmetadata', () => {
+          timeDisplay.textContent = `00:00 / ${formatTime(audioElement.duration)}`;
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
