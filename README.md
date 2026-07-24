@@ -14,11 +14,16 @@ A Premium Windows Desktop Application to create customized wish links and genera
 1. **Python Setup:** Make sure Python is properly installed on your system.
 2. **Open in VS Code:** Open the `app.py` file in VS Code or any other code editor.
 3. **Run the Application:** Open your terminal and run the script:
-   python app.py
+
+```bash
+python app.py
+```
 
 ---
 
 ## Method 2: How to Build `.exe` File (For Windows) 📦
 If you want to convert this script into a standalone application (.exe), open your terminal and run this exact command:
 
+```bash
 pyinstaller --noconsole --onefile --icon="CT-Stdio.ico" --add-data "CT-Stdio.ico;." --collect-all customtkinter --name="Ct wishlink generator" app.py
+```
