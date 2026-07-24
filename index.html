@@ -175,13 +175,13 @@
 
   /* Name — stable script face, generous vertical room so ascenders/descenders never clip */
   .name-text{ font-family:'Dancing Script', cursive; font-weight:700;
-    font-size:clamp(2.75rem, 8.5vw, 5.25rem); line-height:1.35;
-    padding:.7rem .2rem 1.3rem; margin:0; display:inline-block; overflow:visible;
-    color:var(--ink);
-    background:linear-gradient(100deg, var(--ink) 15%, var(--accent-dark) 55%, var(--accent) 85%);
-    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
-    overflow-wrap:break-word; word-break:break-word; max-width:100%; hyphens:none;
-    text-shadow:0 10px 34px rgba(var(--shadow-tint),.24), 0 2px 10px rgba(0,0,0,.14); }
+  font-size:clamp(2.75rem, 8.5vw, 5.25rem); line-height:1.35;
+  padding:.7rem .2rem 1.3rem; margin:0; display:inline-block; overflow:visible;
+  color:var(--ink);
+  background:linear-gradient(100deg, var(--ink) 15%, var(--accent-dark) 55%, var(--accent) 85%);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  overflow-wrap:break-word; word-break:break-all; max-width:100%; hyphens:none;
+  text-shadow:0 10px 34px rgba(var(--shadow-tint),.24), 0 2px 10px rgba(0,0,0,.14); }
 
   /* Date badge */
   .date-pill{ display:inline-flex; align-items:center; gap:.45rem; padding:.4rem 1rem; border-radius:9999px;
@@ -203,7 +203,8 @@
     -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite:xor; mask-composite:exclude; opacity:.6; pointer-events:none; }
 
-  .message-text{ color:var(--ink-body); font-weight:400; line-height:1.85; font-size:clamp(1.05rem,2.2vw,1.25rem); }
+  .message-text{ color:var(--ink-body); font-weight:400; line-height:1.85; font-size:clamp(1.05rem,2.2vw,1.25rem);
+  overflow-wrap:break-word; word-break:break-all; max-width:100%; }
 
   /* Audio player */
   .audio-bar{ background:var(--glass); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
