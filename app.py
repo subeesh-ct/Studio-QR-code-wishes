@@ -678,7 +678,7 @@ class WishLinkApp(ctk.CTk):
         self.form_frame.reset_form()
         self.form_frame.pack(fill="both", expand=True)
 
-# ==================== LAUNCH ====================
+# =================== LAUNCH ====================
 if __name__ == "__main__":
     app = WishLinkApp()
     app.mainloop()
