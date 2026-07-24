@@ -3,7 +3,8 @@
 CT Wishlink Generator – Premium Windows Desktop App
 Complete: PyInstaller support, ImgBB API for Images, 
 Hardcoded Audio URL with Redirect Button, Forced Settings Setup,
-Global Window Icons (Fixed for Popups) & Startup/Runtime Internet Checks.
+Global Window Icons, Startup/Runtime Internet Checks,
+AND Message Limit set to 150 characters with live character counting.
 """
 
 import subprocess
@@ -56,7 +57,7 @@ import requests
 # ==================== CONFIG ====================
 CONFIG_FILE = "config.json"
 MAX_IMAGE_MB = 3
-MAX_MSG_LENGTH = 500
+MAX_MSG_LENGTH = 150  # 👈 Message limit restricted to 150 characters as you requested!
 
 # 👇(PASTE YOUR AUDIO REDIRECT LINK HERE) 👇
 AUDIO_REDIRECT_URL = "https://subeesh-ct.github.io/Studio-QR-code-wishes/redirect.html" 
@@ -67,7 +68,6 @@ ctk.set_default_color_theme("dark-blue")
 
 # ==================== HELPERS ====================
 def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
         base_path = sys._MEIPASS
     except Exception:
@@ -75,7 +75,6 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 def set_window_icon(window):
-    """ Sets the custom icon for any CTk / Toplevel window safely with a small delay for child windows """
     icon_path = resource_path("CT-Stdio.ico")
     if os.path.exists(icon_path):
         try:
@@ -83,7 +82,6 @@ def set_window_icon(window):
         except Exception:
             pass
         
-        # FIX: CustomTkinter Toplevels need a slight delay to override the default Windows icon completely
         def apply_delayed_icon():
             try:
                 window.iconbitmap(icon_path)
@@ -92,7 +90,6 @@ def set_window_icon(window):
         window.after(200, apply_delayed_icon)
 
 def check_internet():
-    """ Checks if internet connection is available """
     try:
         requests.get("https://www.google.com", timeout=3)
         return True
@@ -142,7 +139,6 @@ def compress_image_to_webp(file_path, max_mb=MAX_IMAGE_MB):
     return buffer
 
 def upload_to_imgbb(file_obj, api_key):
-    """ Uploads image to ImgBB and returns the URL """
     url = "https://api.imgbb.com/1/upload"
     try:
         resp = requests.post(
@@ -173,7 +169,6 @@ class SettingsModal(ctk.CTkToplevel):
         self.transient(parent)
         self.grab_set()
         
-        # Apply the fix for icon
         set_window_icon(self)
         
         if self.forced:
@@ -237,7 +232,6 @@ class LoadingPopup(ctk.CTkToplevel):
         self.transient(parent)
         self.grab_set()
         
-        # Apply the fix for icon
         set_window_icon(self)
         
         w, h = 320, 120
@@ -309,7 +303,16 @@ class FormFrame(ctk.CTkScrollableFrame):
         self.year_entry = ctk.CTkEntry(self.date_frame, placeholder_text="Year", width=80)
         self.year_entry.pack(side="left", padx=5)
 
-        ctk.CTkLabel(self, text=f"Message * (Max {MAX_MSG_LENGTH} chars)", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(10,2))
+        # Message Header with Live Counter
+        msg_header_frame = ctk.CTkFrame(self, fg_color="transparent")
+        msg_header_frame.pack(fill="x", pady=(10,2))
+        
+        ctk.CTkLabel(msg_header_frame, text=f"Message *", font=ctk.CTkFont(weight="bold")).pack(side="left")
+        
+        # Live Character Counter Label
+        self.counter_label = ctk.CTkLabel(msg_header_frame, text=f"0 / {MAX_MSG_LENGTH} chars", text_color="gray", font=ctk.CTkFont(size=12))
+        self.counter_label.pack(side="right")
+
         self.msg_text = ctk.CTkTextbox(self, height=90)
         self.msg_text.pack(fill="x", pady=(0,10))
         
@@ -317,20 +320,20 @@ class FormFrame(ctk.CTkScrollableFrame):
         self.msg_text.bind("<KeyRelease>", self._on_msg_keyrelease)
         self.msg_text.bind("<<Modified>>", self._on_msg_modified)
 
-        # ====== MEDIA FRAME (Image + Audio Box) ======
+        # ====== MEDIA FRAME ======
         media_frame = ctk.CTkFrame(self, corner_radius=10)
         media_frame.pack(fill="x", pady=10, padx=10)
         media_frame.columnconfigure(0, weight=1, uniform="col")
         media_frame.columnconfigure(1, weight=1, uniform="col")
 
-        # IMAGE COLUMN (ImgBB)
+        # IMAGE COLUMN
         ctk.CTkLabel(media_frame, text="Image (Optional)").grid(row=0, column=0, sticky="w", padx=15, pady=(10,2))
         self.img_label = ctk.CTkLabel(media_frame, text="No file selected", text_color="gray")
         self.img_label.grid(row=1, column=0, sticky="w", padx=15)
         ctk.CTkButton(media_frame, text="Select Image", width=130,
                       command=self.select_image).grid(row=2, column=0, padx=15, pady=(5,10), sticky="ew")
 
-        # AUDIO COLUMN (Manual URL & How to Get Link Button)
+        # AUDIO COLUMN
         ctk.CTkLabel(media_frame, text="Audio URL (Optional)").grid(row=0, column=1, sticky="w", padx=15, pady=(10,2))
         self.audio_url_entry = ctk.CTkEntry(media_frame, placeholder_text="Paste direct link here...")
         self.audio_url_entry.grid(row=1, column=1, sticky="ew", padx=15)
@@ -360,10 +363,22 @@ class FormFrame(ctk.CTkScrollableFrame):
     def _enforce_msg_limit(self):
         if self.msg_text._enforcing: return
         self.msg_text._enforcing = True
+        
         text = self.msg_text.get("1.0", "end-1c")
-        if len(text) > MAX_MSG_LENGTH:
+        current_len = len(text)
+        
+        if current_len > MAX_MSG_LENGTH:
             self.msg_text.delete("1.0", "end")
             self.msg_text.insert("1.0", text[:MAX_MSG_LENGTH])
+            current_len = MAX_MSG_LENGTH
+            
+        # Update live character counter text and color
+        self.counter_label.configure(text=f"{current_len} / {MAX_MSG_LENGTH} chars")
+        if current_len >= MAX_MSG_LENGTH:
+            self.counter_label.configure(text_color="orange")
+        else:
+            self.counter_label.configure(text_color="gray")
+            
         self.msg_text._enforcing = False
 
     def select_image(self):
@@ -388,6 +403,7 @@ class FormFrame(ctk.CTkScrollableFrame):
         self.day_combo.set("Day")
         self.year_entry.delete(0, "end")
         self.msg_text.delete("1.0", "end")
+        self.counter_label.configure(text=f"0 / {MAX_MSG_LENGTH} chars", text_color="gray")
         self.occasion_combo.set("Birthday")
         self.custom_frame.pack_forget()
         self.custom_entry.delete(0, "end")
@@ -396,7 +412,7 @@ class FormFrame(ctk.CTkScrollableFrame):
         self.img_label.configure(text="No file selected", text_color="gray")
         self.audio_url_entry.delete(0, "end")
 
-# ==================== LIVE COLOR PICKER COMPONENT ====================
+# ==================== LIVE COLOR PICKER ====================
 class LiveColorPicker(ctk.CTkFrame):
     def __init__(self, master, title, initial_color, on_color_change):
         super().__init__(master, corner_radius=10)
@@ -452,7 +468,7 @@ class LiveColorPicker(ctk.CTkFrame):
                                 fg_color=color, hover_color=color, command=lambda c=color: self.set_color(c))
             btn.pack(side="left", padx=2, pady=2)
 
-# ==================== OUTPUT FRAME (SCROLLABLE) ====================
+# ==================== OUTPUT FRAME ====================
 class OutputFrame(ctk.CTkScrollableFrame):
     def __init__(self, master, app, url):
         super().__init__(master, corner_radius=12, fg_color="transparent", orientation="vertical")
@@ -477,7 +493,8 @@ class OutputFrame(ctk.CTkScrollableFrame):
 
         qr_container = ctk.CTkFrame(self, corner_radius=10)
         qr_container.pack(fill="x", padx=30, pady=(5,10))
-        self.qr_label = ctk.CTkLabel(qr_container, text="", width=220, height=220, fg_color="white", corner_radius=8)
+        
+        self.qr_label = ctk.CTkLabel(qr_container, text="", width=240, height=240, fg_color="white", corner_radius=8)
         self.qr_label.pack(pady=15)
         ctk.CTkButton(qr_container, text="Download QR (PNG)", width=180, command=self.download_qr).pack(pady=(0,15))
 
@@ -508,13 +525,13 @@ class OutputFrame(ctk.CTkScrollableFrame):
 
     def regenerate_qr(self):
         try:
-            qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=2)
+            qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=12, border=2)
             qr.add_data(self.url)
             qr.make(fit=True)
             img = qr.make_image(fill_color=self.fg_color, back_color=self.bg_color).convert("RGBA")
             self.qr_pil_image = img
-            display_img = img.resize((220, 220), Image.LANCZOS)
-            ctk_img = ctk.CTkImage(light_image=display_img, dark_image=display_img, size=(220, 220))
+            display_img = img.resize((240, 240), Image.LANCZOS)
+            ctk_img = ctk.CTkImage(light_image=display_img, dark_image=display_img, size=(240, 240))
             self.qr_label.configure(image=ctk_img, text="")
         except Exception as e:
             msgbox.showerror("QR Error", str(e), parent=self)
@@ -539,7 +556,6 @@ class WishLinkApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         
-        # 1. Check internet on startup - Close app if no internet
         if not check_internet():
             self.withdraw()
             set_window_icon(self)
@@ -549,7 +565,6 @@ class WishLinkApp(ctk.CTk):
         self.title("CT Wishlink Generator") 
         self.resizable(True, True)
         
-        # Apply the fix for main window icon
         set_window_icon(self)
 
         self.base_url, self.studio_name, self.imgbb_api_key = load_config()
@@ -586,7 +601,6 @@ class WishLinkApp(ctk.CTk):
         self.imgbb_api_key = new_imgbb
 
     def start_generation(self):
-        # 2. Runtime internet check - Just show warning, do NOT close the app
         if not check_internet():
             msgbox.showwarning("Internet Lost", "No internet connection detected. Please check your network and try again.", parent=self)
             return
@@ -652,9 +666,9 @@ class WishLinkApp(ctk.CTk):
 
             qs = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
             base = self.base_url.rstrip("/")
-            final_url = f"{base}/?{qs}" if "?" not in base else f"{base}&{qs}"
-
-            self.after(0, self._on_success, final_url)
+            final_long_url = f"{base}/?{qs}" if "?" not in base else f"{base}&{qs}"
+            
+            self.after(0, self._on_success, final_long_url)
         except Exception as e:
             self.after(0, self._on_error, str(e))
 
@@ -678,7 +692,7 @@ class WishLinkApp(ctk.CTk):
         self.form_frame.reset_form()
         self.form_frame.pack(fill="both", expand=True)
 
-# =================== LAUNCH ====================
+# ==================== LAUNCH ====================
 if __name__ == "__main__":
     app = WishLinkApp()
     app.mainloop()
