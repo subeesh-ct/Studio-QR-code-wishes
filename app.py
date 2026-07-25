@@ -1,24 +1,33 @@
 #!/usr/bin/env python3
 """
 CT Wishlink Generator – Premium Windows Desktop App
-Complete: PyInstaller support, ImgBB API for Images, 
-Hardcoded Audio URL with Redirect Button, Forced Settings Setup,
-Global Window Icons, Startup/Runtime Internet Checks,
-AND Message Limit set to 150 characters with live character counting.
+Features: Direct Download of FFmpeg/FFprobe binaries into local 'ffmpeg_bin',
+Live Terminal Logs, PyInstaller support, Smart Image Compression (<500KB skipped), 
+Advanced Error Handling, Full Occasions List, Hidden CMD Window for Audio.
 """
 
 import subprocess
 import sys
 import importlib
-import datetime
 import os
+import tempfile
+import json
+import threading
+import webbrowser
+from io import BytesIO
+import urllib.parse
+import colorsys
+import zipfile
+from tkinter import Canvas
+import tkinter.messagebox as msgbox
 
 # ==================== AUTO‑INSTALL BOOTSTRAP ====================
 REQUIRED = {
     'customtkinter': 'customtkinter',
     'qrcode': 'qrcode',
     'PIL': 'pillow',
-    'requests': 'requests'
+    'requests': 'requests',
+    'pydub': 'pydub'
 }
 
 def bootstrap():
@@ -39,28 +48,23 @@ def bootstrap():
 
 bootstrap()
 
-# ==================== IMPORTS ====================
-import json
-import threading
-import webbrowser
-from io import BytesIO
-import urllib.parse
-import colorsys
-from tkinter import Canvas
-import tkinter.messagebox as msgbox
-
 import customtkinter as ctk
 from PIL import Image
 import qrcode
 import requests
+from pydub import AudioSegment
 
-# ==================== CONFIG ====================
+# ==================== CONFIG & LOCAL BIN PATHS ====================
 CONFIG_FILE = "config.json"
-MAX_IMAGE_MB = 3
-MAX_MSG_LENGTH = 150  # 👈 Message limit restricted to 150 characters as you requested!
+SETUP_MARKER = "ffmpeg_setup_done.flag"
+LOCAL_BIN_DIR = os.path.join(os.path.abspath("."), "ffmpeg_bin")
 
-# 👇(PASTE YOUR AUDIO REDIRECT LINK HERE) 👇
-AUDIO_REDIRECT_URL = "https://subeesh-ct.github.io/Studio-QR-code-wishes/redirect.html" 
+MAX_FILE_BYTES = 10 * 1024 * 1024  # 10 MB limit
+MAX_MSG_LENGTH = 150 
+SMART_COMPRESS_LIMIT = 500 * 1024  # 500 KB limit for images
+
+# 👇(PASTE YOUR YOUTUBE TUTORIAL LINK HERE) 👇
+TUTORIAL_URL = "https://subeesh-ct.github.io/Studio-QR-code-wishes/redirect.html" 
 # 👆 ------------------------------------------------------------------------- 👆
 
 ctk.set_appearance_mode("dark")
@@ -81,7 +85,6 @@ def set_window_icon(window):
             window.iconbitmap(icon_path)
         except Exception:
             pass
-        
         def apply_delayed_icon():
             try:
                 window.iconbitmap(icon_path)
@@ -96,6 +99,14 @@ def check_internet():
     except Exception:
         return False
 
+def format_size(size_bytes):
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    else:
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+
 def load_config():
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
@@ -103,16 +114,20 @@ def load_config():
             return (
                 data.get("base_url", "").strip(), 
                 data.get("studio_name", "").strip(),
-                data.get("imgbb_api", "").strip()
+                data.get("imgbb_api", "").strip(),
+                data.get("cloud_name", "").strip(),
+                data.get("upload_preset", "").strip()
             )
-    return "", "", ""
+    return "", "", "", "", ""
 
-def save_config(url, studio_name, imgbb_api):
+def save_config(url, studio_name, imgbb_api, cloud_name, upload_preset):
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump({
             "base_url": url.strip(),
             "studio_name": studio_name.strip(),
-            "imgbb_api": imgbb_api.strip()
+            "imgbb_api": imgbb_api.strip(),
+            "cloud_name": cloud_name.strip(),
+            "upload_preset": upload_preset.strip()
         }, f, indent=4)
 
 def center_window(win, width, height):
@@ -122,43 +137,198 @@ def center_window(win, width, height):
     y = (sh - height) // 2
     win.geometry(f"{width}x{height}+{x}+{y}")
 
-def compress_image_to_webp(file_path, max_mb=MAX_IMAGE_MB):
+# ==================== INITIAL SETUP WINDOW (DIRECT DOWNLOADER) ====================
+class SetupWindow(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+        self.title("Initial Setup Required")
+        self.resizable(False, False)
+        set_window_icon(self)
+        center_window(self, 520, 420)
+        
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+
+        frame = ctk.CTkFrame(self, corner_radius=15)
+        frame.pack(fill="both", expand=True, padx=20, pady=20)
+
+        ctk.CTkLabel(frame, text="⚙️ Component Installation", font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(10, 5))
+        ctk.CTkLabel(frame, text="Directly downloading FFmpeg/FFprobe binaries into\n'ffmpeg_bin' folder. Please do not close this window.", 
+                     font=ctk.CTkFont(size=12), text_color="gray", justify="center").pack(pady=(0, 10))
+
+        self.progress = ctk.CTkProgressBar(frame, mode="indeterminate", width=440)
+        self.progress.pack(pady=5)
+        self.progress.stop()
+
+        self.log_box = ctk.CTkTextbox(frame, height=130, width=440, state="disabled", fg_color="#1E1E1E", text_color="#00FF00", font=ctk.CTkFont(family="Consolas", size=11))
+        self.log_box.pack(pady=10)
+
+        self.start_btn = ctk.CTkButton(frame, text="Download & Setup Now", width=200, height=36, command=self.run_setup)
+        self.start_btn.pack(pady=(5, 10))
+
+    def append_log(self, text):
+        self.log_box.configure(state="normal")
+        self.log_box.insert("end", text + "\n")
+        self.log_box.see("end")
+        self.log_box.configure(state="disabled")
+
+    def run_setup(self):
+        if not check_internet():
+            msgbox.showerror("No Internet", "Please connect to the internet to download required components.", parent=self)
+            return
+
+        self.start_btn.configure(state="disabled")
+        self.progress.start()
+        self.append_log(">>> Starting direct binary download...")
+
+        threading.Thread(target=self._download_worker, daemon=True).start()
+
+    def _download_worker(self):
+        try:
+            os.makedirs(LOCAL_BIN_DIR, exist_ok=True)
+            self.after(0, self.append_log, ">>> Created local 'ffmpeg_bin' directory.")
+
+            files_to_download = {
+                "ffmpeg.exe": "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.4.1/ffmpeg-4.4.1-win-64.zip",
+                "ffprobe.exe": "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.4.1/ffprobe-4.4.1-win-64.zip"
+            }
+
+            for name, url in files_to_download.items():
+                self.after(0, self.append_log, f">>> Downloading {name} from server...")
+                response = requests.get(url, stream=True)
+                response.raise_for_status()
+                
+                self.after(0, self.append_log, f">>> Extracting {name} into 'ffmpeg_bin'...")
+                with zipfile.ZipFile(BytesIO(response.content)) as z:
+                    z.extractall(LOCAL_BIN_DIR)
+                
+                self.after(0, self.append_log, f">>> Successfully saved: {name}")
+
+            self.after(0, self.append_log, ">>> All files safely stored in your app folder!")
+
+            with open(SETUP_MARKER, "w") as f:
+                f.write("setup_completed")
+            
+            self.after(0, self.append_log, ">>> Setup 100% Completed!")
+            self.after(1000, self._setup_success)
+        except Exception as e:
+            self.after(0, self._setup_error, str(e))
+
+    def _setup_success(self):
+        self.progress.stop()
+        msgbox.showinfo("Success", "Components downloaded directly to folder! Click OK to launch.", parent=self)
+        self.destroy()
+
+    def _setup_error(self, err):
+        self.progress.stop()
+        self.start_btn.configure(state="normal")
+        self.append_log(f"ERROR: {err}")
+        msgbox.showerror("Error", f"Failed to download components:\n{err}", parent=self)
+
+    def on_close(self):
+        self.destroy()
+        sys.exit(0)
+
+
+# ==================== SMART MEDIA PROCESSORS (WITH HIDDEN CMD) ====================
+def init_ffmpeg_path():
+    ffmpeg_exe = os.path.join(LOCAL_BIN_DIR, "ffmpeg.exe")
+    ffprobe_exe = os.path.join(LOCAL_BIN_DIR, "ffprobe.exe")
+    
+    if os.path.exists(ffmpeg_exe):
+        AudioSegment.converter = ffmpeg_exe
+    if os.path.exists(ffprobe_exe):
+        AudioSegment.ffmpeg = ffmpeg_exe
+        AudioSegment.ffprobe = ffprobe_exe
+        os.environ["PATH"] += os.pathsep + LOCAL_BIN_DIR
+
+    # Hide CMD window when pydub/ffmpeg runs subprocess on Windows
+    if os.name == 'nt':
+        import subprocess
+        subprocess.Popen = patch_subprocess_popen(subprocess.Popen)
+
+    return AudioSegment
+
+def patch_subprocess_popen(original_popen):
+    class PatchedPopen(original_popen):
+        def __init__(self, *args, **kwargs):
+            # Add CREATE_NO_WINDOW flag to hide the command prompt window
+            if os.name == 'nt':
+                creationflags = kwargs.get('creationflags', 0)
+                kwargs['creationflags'] = creationflags | 0x08000000 # CREATE_NO_WINDOW
+            super().__init__(*args, **kwargs)
+    return PatchedPopen
+
+def compress_image_to_webp(file_path):
+    orig_size = os.path.getsize(file_path)
+    
+    if orig_size < SMART_COMPRESS_LIMIT:
+        with open(file_path, "rb") as f:
+            buffer = BytesIO(f.read())
+        return buffer, False 
+
     img = Image.open(file_path).convert("RGB")
     if max(img.size) > 2000:
         img.thumbnail((2000, 2000), Image.LANCZOS)
     buffer = BytesIO()
-    quality = 90
-    while True:
-        buffer.seek(0)
-        buffer.truncate()
-        img.save(buffer, format="WEBP", quality=quality)
-        if len(buffer.getvalue()) / (1024 * 1024) <= max_mb or quality <= 10:
-            break
-        quality -= 10
+    quality = 95 if orig_size < 1 * 1024 * 1024 else 85
+    img.save(buffer, format="WEBP", quality=quality)
     buffer.seek(0)
-    return buffer
+    return buffer, True
 
-def upload_to_imgbb(file_obj, api_key):
+def upload_to_imgbb(file_obj, api_key, is_compressed=True):
     url = "https://api.imgbb.com/1/upload"
     try:
-        resp = requests.post(
-            url,
-            data={"key": api_key},
-            files={"image": ("wish_image.webp", file_obj, "image/webp")},
-            timeout=120
-        )
-        resp.raise_for_status()
+        filename = "img.webp" if is_compressed else "img.orig"
+        mime_type = "image/webp" if is_compressed else "application/octet-stream"
+        
+        resp = requests.post(url, data={"key": api_key}, files={"image": (filename, file_obj, mime_type)}, timeout=60)
+        if not resp.ok:
+             raise Exception(f"ImgBB Server Error ({resp.status_code}). Please check if your ImgBB API Key is correct.")
+
         json_data = resp.json()
         if json_data.get("success"):
             return json_data["data"]["url"]
         else:
             raise Exception(json_data.get("error", {}).get("message", "Unknown ImgBB Error"))
+    except ValueError:
+        raise Exception("ImgBB returned an invalid response. Your API Key might be wrong.")
     except Exception as e:
         raise Exception(f"ImgBB Upload failed: {str(e)}")
 
+def compress_audio_to_mp3(file_path):
+    AudioSegment = init_ffmpeg_path()
+    temp_mp3 = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+    temp_mp3.close()
+    
+    audio = AudioSegment.from_file(file_path)
+    orig_size = os.path.getsize(file_path)
+    bitrate = "192k" if orig_size < 1 * 1024 * 1024 else "128k"
+    
+    audio.export(temp_mp3.name, format="mp3", bitrate=bitrate)
+    return temp_mp3.name
+
+def upload_to_cloudinary(file_path, cloud_name, upload_preset):
+    url = f"https://api.cloudinary.com/v1_1/{cloud_name}/upload"
+    try:
+        with open(file_path, 'rb') as f:
+            resp = requests.post(url, data={"upload_preset": upload_preset, "resource_type": "video"}, files={"file": f}, timeout=120)
+            
+        if not resp.ok:
+            raise Exception(f"Cloudinary Error ({resp.status_code}). Please check your Cloud Name and Upload Preset in Settings.")
+
+        json_data = resp.json()
+        if "secure_url" in json_data:
+            return json_data["secure_url"]
+        else:
+            raise Exception("Cloudinary URL not found in response.")
+    except ValueError:
+        raise Exception("Cloudinary returned an invalid response. Your Cloud Name or Upload Preset might be wrong.")
+    except Exception as e:
+        raise Exception(f"Cloudinary Upload failed: {str(e)}")
+
 # ==================== MODALS ====================
 class SettingsModal(ctk.CTkToplevel):
-    def __init__(self, parent, current_url, current_studio, current_imgbb, on_save, forced=False):
+    def __init__(self, parent, c_url, c_studio, c_imgbb, c_cloud, c_preset, on_save, forced=False):
         super().__init__(parent)
         self.parent = parent
         self.on_save_callback = on_save
@@ -168,58 +338,70 @@ class SettingsModal(ctk.CTkToplevel):
         self.resizable(False, False)
         self.transient(parent)
         self.grab_set()
-        
         set_window_icon(self)
         
-        if self.forced:
-            self.protocol("WM_DELETE_WINDOW", self.on_forced_close)
+        if self.forced: self.protocol("WM_DELETE_WINDOW", self.on_forced_close)
         
-        w, h = 460, 350
+        w, h = 480, 520
         center_window(self, w, h)
         
         frame = ctk.CTkFrame(self, corner_radius=15)
         frame.pack(fill="both", expand=True, padx=20, pady=20)
         
-        ctk.CTkLabel(frame, text="Base URL *", font=ctk.CTkFont(weight="bold")).pack(pady=(10,2))
-        self.url_entry = ctk.CTkEntry(frame, width=380, placeholder_text="https://...")
-        self.url_entry.insert(0, current_url)
+        ctk.CTkLabel(frame, text="Base URL *", font=ctk.CTkFont(weight="bold")).pack(pady=(5,2))
+        self.url_entry = ctk.CTkEntry(frame, width=380)
+        self.url_entry.insert(0, c_url)
         self.url_entry.pack(pady=(0,10), padx=20)
         
-        ctk.CTkLabel(frame, text="ImgBB API Key *", font=ctk.CTkFont(weight="bold")).pack(pady=(5,2))
-        self.imgbb_entry = ctk.CTkEntry(frame, width=380, placeholder_text="Enter your ImgBB API key")
-        self.imgbb_entry.insert(0, current_imgbb)
+        ctk.CTkLabel(frame, text="ImgBB API Key (For Images) *", font=ctk.CTkFont(weight="bold")).pack(pady=(2,2))
+        self.imgbb_entry = ctk.CTkEntry(frame, width=380)
+        self.imgbb_entry.insert(0, c_imgbb)
         self.imgbb_entry.pack(pady=(0,10), padx=20)
 
-        ctk.CTkLabel(frame, text="Studio Name (Header Link)", font=ctk.CTkFont(weight="bold")).pack(pady=(5,2))
-        self.studio_entry = ctk.CTkEntry(frame, width=380, placeholder_text="e.g., CT Wishlink Generator")
-        self.studio_entry.insert(0, current_studio)
-        self.studio_entry.pack(pady=(0,5), padx=20)
+        ctk.CTkLabel(frame, text="Cloudinary Cloud Name (For Audio) *", font=ctk.CTkFont(weight="bold")).pack(pady=(2,2))
+        self.cloud_entry = ctk.CTkEntry(frame, width=380)
+        self.cloud_entry.insert(0, c_cloud)
+        self.cloud_entry.pack(pady=(0,10), padx=20)
+
+        ctk.CTkLabel(frame, text="Cloudinary Upload Preset *", font=ctk.CTkFont(weight="bold")).pack(pady=(2,2))
+        self.preset_entry = ctk.CTkEntry(frame, width=380)
+        self.preset_entry.insert(0, c_preset)
+        self.preset_entry.pack(pady=(0,10), padx=20)
+
+        ctk.CTkLabel(frame, text="Studio Name", font=ctk.CTkFont(weight="bold")).pack(pady=(2,2))
+        self.studio_entry = ctk.CTkEntry(frame, width=380)
+        self.studio_entry.insert(0, c_studio)
+        self.studio_entry.pack(pady=(0,10), padx=20)
+
+        btn_frame = ctk.CTkFrame(frame, fg_color="transparent")
+        btn_frame.pack(fill="x", padx=20, pady=15)
+        
+        ctk.CTkButton(btn_frame, text="🎥 How to Setup", width=130,
+                      command=lambda: webbrowser.open(TUTORIAL_URL)).pack(side="left")
+        
+        ctk.CTkButton(btn_frame, text="Save & Continue", width=130,
+                      command=self.save).pack(side="right")
 
         self.status = ctk.CTkLabel(frame, text="", text_color="green")
         self.status.pack(pady=2)
-        ctk.CTkButton(frame, text="Save & Continue", width=140, command=self.save).pack(pady=(5,10))
 
     def save(self):
         new_url = self.url_entry.get().strip()
         new_studio = self.studio_entry.get().strip()
         new_imgbb = self.imgbb_entry.get().strip()
+        new_cloud = self.cloud_entry.get().strip()
+        new_preset = self.preset_entry.get().strip()
         
-        if not new_url or not new_imgbb:
-            self.status.configure(text="Base URL and ImgBB API Key are required!", text_color="red")
-            return
-        if not (new_url.startswith("http://") or new_url.startswith("https://")):
-            self.status.configure(text="Base URL must start with http:// or https://", text_color="red")
+        if not all([new_url, new_imgbb, new_cloud, new_preset]):
+            self.status.configure(text="All * fields are required!", text_color="red")
             return
             
-        save_config(new_url, new_studio, new_imgbb)
-        self.on_save_callback(new_url, new_studio, new_imgbb)
-        self.status.configure(text="Successfully Saved!", text_color="green")
+        save_config(new_url, new_studio, new_imgbb, new_cloud, new_preset)
+        self.on_save_callback(new_url, new_studio, new_imgbb, new_cloud, new_preset)
         
-        if self.forced:
-            self.parent.deiconify()
-            
-        self.after(800, self.destroy)
-        
+        if self.forced: self.parent.deiconify()
+        self.destroy()
+
     def on_forced_close(self):
         msgbox.showwarning("Required", "You must fill in the Settings to use the application.")
         self.parent.destroy()
@@ -231,15 +413,11 @@ class LoadingPopup(ctk.CTkToplevel):
         self.resizable(False, False)
         self.transient(parent)
         self.grab_set()
-        
         set_window_icon(self)
-        
-        w, h = 320, 120
-        center_window(self, w, h)
+        center_window(self, 320, 120)
         frame = ctk.CTkFrame(self, corner_radius=15)
         frame.pack(fill="both", expand=True, padx=20, pady=20)
-        ctk.CTkLabel(frame, text="Processing & Uploading...\nPlease wait",
-                     font=ctk.CTkFont(size=13)).pack(pady=(15,10))
+        ctk.CTkLabel(frame, text="Processing & Uploading...\nPlease wait", font=ctk.CTkFont(size=13)).pack(pady=(15,10))
         self.progress = ctk.CTkProgressBar(frame, mode="indeterminate", width=250)
         self.progress.pack(pady=10)
         self.progress.start()
@@ -248,12 +426,53 @@ class LoadingPopup(ctk.CTkToplevel):
         self.progress.stop()
         self.destroy()
 
+class SuccessReportModal(ctk.CTkToplevel):
+    def __init__(self, parent, report_data, on_ok_callback):
+        super().__init__(parent)
+        self.title("Upload Successful")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+        set_window_icon(self)
+        center_window(self, 400, 260)
+        
+        self.on_ok = on_ok_callback
+        
+        frame = ctk.CTkFrame(self, corner_radius=15)
+        frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        ctk.CTkLabel(frame, text="✅ Upload Successful!", font=ctk.CTkFont(size=18, weight="bold"), text_color="#2FA37A").pack(pady=(10,15))
+        
+        if report_data.get('img'):
+            i_orig = format_size(report_data['img']['orig'])
+            i_new = format_size(report_data['img']['new'])
+            
+            if report_data['img'].get('skipped'):
+                ctk.CTkLabel(frame, text=f"🖼️ Image: {i_orig} (Original Quality Maintained)", font=ctk.CTkFont(size=13)).pack(pady=2)
+            else:
+                ctk.CTkLabel(frame, text=f"🖼️ Image: {i_orig} ➔ {i_new}", font=ctk.CTkFont(size=13)).pack(pady=2)
+            
+        if report_data.get('audio'):
+            a_orig = format_size(report_data['audio']['orig'])
+            a_new = format_size(report_data['audio']['new'])
+            ctk.CTkLabel(frame, text=f"🎵 Audio: {a_orig} ➔ {a_new}", font=ctk.CTkFont(size=13)).pack(pady=2)
+            
+        if not report_data.get('img') and not report_data.get('audio'):
+            ctk.CTkLabel(frame, text="Generated without media files.", font=ctk.CTkFont(size=13)).pack(pady=5)
+            
+        ctk.CTkButton(frame, text="OK", width=120, command=self.close_modal).pack(pady=(20,10))
+
+    def close_modal(self):
+        self.on_ok()
+        self.destroy()
+
 # ==================== FORM FRAME ====================
 class FormFrame(ctk.CTkScrollableFrame):
     def __init__(self, master, app):
         super().__init__(master, corner_radius=12, fg_color="transparent")
         self.app = app
         self.img_path = None
+        self.audio_path = None
         self._create_widgets()
 
     def _create_widgets(self):
@@ -273,10 +492,13 @@ class FormFrame(ctk.CTkScrollableFrame):
         self.theme_combo.pack(fill="x", pady=(0,10))
 
         ctk.CTkLabel(self, text="Occasion", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(5,2))
-        occasions = ["Birthday", "Anniversary", "Wedding", "Graduation", "Farewell",
-                     "Valentine's Day", "Mother's Day", "Father's Day", "Diwali",
-                     "Pongal", "Eid", "Christmas", "New Year", "Congratulations",
-                     "Get Well Soon", "Custom"]
+        
+        occasions = [
+            "Birthday", "Anniversary", "Wedding", "Graduation", "Farewell", 
+            "Valentine's Day", "Mother's Day", "Father's Day", "Diwali", 
+            "Pongal", "Eid", "Christmas", "New Year", "Congratulations", 
+            "Get Well Soon", "Custom"
+        ]
         self.occasion_combo = ctk.CTkComboBox(self, values=occasions, state="readonly", command=self._on_occasion_change, height=36)
         self.occasion_combo.set("Birthday")
         self.occasion_combo.pack(fill="x", pady=(0,5))
@@ -303,19 +525,15 @@ class FormFrame(ctk.CTkScrollableFrame):
         self.year_entry = ctk.CTkEntry(self.date_frame, placeholder_text="Year", width=80)
         self.year_entry.pack(side="left", padx=5)
 
-        # Message Header with Live Counter
         msg_header_frame = ctk.CTkFrame(self, fg_color="transparent")
         msg_header_frame.pack(fill="x", pady=(10,2))
+        ctk.CTkLabel(msg_header_frame, text="Message *", font=ctk.CTkFont(weight="bold")).pack(side="left")
         
-        ctk.CTkLabel(msg_header_frame, text=f"Message *", font=ctk.CTkFont(weight="bold")).pack(side="left")
-        
-        # Live Character Counter Label
         self.counter_label = ctk.CTkLabel(msg_header_frame, text=f"0 / {MAX_MSG_LENGTH} chars", text_color="gray", font=ctk.CTkFont(size=12))
         self.counter_label.pack(side="right")
 
         self.msg_text = ctk.CTkTextbox(self, height=90)
         self.msg_text.pack(fill="x", pady=(0,10))
-        
         self.msg_text._enforcing = False
         self.msg_text.bind("<KeyRelease>", self._on_msg_keyrelease)
         self.msg_text.bind("<<Modified>>", self._on_msg_modified)
@@ -330,18 +548,13 @@ class FormFrame(ctk.CTkScrollableFrame):
         ctk.CTkLabel(media_frame, text="Image (Optional)").grid(row=0, column=0, sticky="w", padx=15, pady=(10,2))
         self.img_label = ctk.CTkLabel(media_frame, text="No file selected", text_color="gray")
         self.img_label.grid(row=1, column=0, sticky="w", padx=15)
-        ctk.CTkButton(media_frame, text="Select Image", width=130,
-                      command=self.select_image).grid(row=2, column=0, padx=15, pady=(5,10), sticky="ew")
+        ctk.CTkButton(media_frame, text="Select Image", width=130, command=self.select_image).grid(row=2, column=0, padx=15, pady=(5,10), sticky="ew")
 
         # AUDIO COLUMN
-        ctk.CTkLabel(media_frame, text="Audio URL (Optional)").grid(row=0, column=1, sticky="w", padx=15, pady=(10,2))
-        self.audio_url_entry = ctk.CTkEntry(media_frame, placeholder_text="Paste direct link here...")
-        self.audio_url_entry.grid(row=1, column=1, sticky="ew", padx=15)
-        
-        ctk.CTkButton(media_frame, text="How to Get This Link?", width=130, fg_color="#E35E22", hover_color="#B34A1A",
-                      command=self.open_audio_redirect).grid(row=2, column=1, padx=15, pady=(5,10), sticky="ew")
-
-        # ===============================================
+        ctk.CTkLabel(media_frame, text="Audio File (Optional)").grid(row=0, column=1, sticky="w", padx=15, pady=(10,2))
+        self.audio_label = ctk.CTkLabel(media_frame, text="No file selected", text_color="gray")
+        self.audio_label.grid(row=1, column=1, sticky="w", padx=15)
+        ctk.CTkButton(media_frame, text="Select Audio", width=130, command=self.select_audio).grid(row=2, column=1, padx=15, pady=(5,10), sticky="ew")
 
         self.gen_btn = ctk.CTkButton(self, text="Generate Link & QR", command=self.app.start_generation,
                                      width=240, height=44, corner_radius=12, font=ctk.CTkFont(size=15, weight="bold"))
@@ -353,48 +566,39 @@ class FormFrame(ctk.CTkScrollableFrame):
         else:
             self.custom_frame.pack_forget()
 
-    def _on_msg_keyrelease(self, event):
-        self._enforce_msg_limit()
-
-    def _on_msg_modified(self, event):
+    def _on_msg_keyrelease(self, event): self._enforce_msg_limit()
+    def _on_msg_modified(self, event): 
         self._enforce_msg_limit()
         self.msg_text.edit_modified(False)  
 
     def _enforce_msg_limit(self):
         if self.msg_text._enforcing: return
         self.msg_text._enforcing = True
-        
         text = self.msg_text.get("1.0", "end-1c")
-        current_len = len(text)
-        
-        if current_len > MAX_MSG_LENGTH:
+        if len(text) > MAX_MSG_LENGTH:
             self.msg_text.delete("1.0", "end")
             self.msg_text.insert("1.0", text[:MAX_MSG_LENGTH])
-            current_len = MAX_MSG_LENGTH
-            
-        # Update live character counter text and color
-        self.counter_label.configure(text=f"{current_len} / {MAX_MSG_LENGTH} chars")
-        if current_len >= MAX_MSG_LENGTH:
-            self.counter_label.configure(text_color="orange")
-        else:
-            self.counter_label.configure(text_color="gray")
-            
+        current_len = len(self.msg_text.get("1.0", "end-1c"))
+        self.counter_label.configure(text=f"{current_len} / {MAX_MSG_LENGTH} chars", text_color="orange" if current_len >= MAX_MSG_LENGTH else "gray")
         self.msg_text._enforcing = False
 
     def select_image(self):
-        path = ctk.filedialog.askopenfilename(
-            title="Select an Image",
-            filetypes=[("Images", "*.jpg *.jpeg *.png *.bmp *.webp"), ("All Files", "*.*")]
-        )
+        path = ctk.filedialog.askopenfilename(title="Select an Image", filetypes=[("Images", "*.jpg *.jpeg *.png *.webp"), ("All", "*.*")])
         if path:
+            if os.path.getsize(path) > MAX_FILE_BYTES:
+                msgbox.showerror("File Too Large", "Please select an image smaller than 10 MB.", parent=self)
+                return
             self.img_path = path
             self.img_label.configure(text=os.path.basename(path), text_color="green")
 
-    def open_audio_redirect(self):
-        if AUDIO_REDIRECT_URL:
-            webbrowser.open(AUDIO_REDIRECT_URL)
-        else:
-            msgbox.showwarning("Missing Link", "Audio Redirect URL is not set in the code.", parent=self)
+    def select_audio(self):
+        path = ctk.filedialog.askopenfilename(title="Select Audio", filetypes=[("Audio", "*.mp3 *.m4a *.wav *.ogg *.aac"), ("All", "*.*")])
+        if path:
+            if os.path.getsize(path) > MAX_FILE_BYTES:
+                msgbox.showerror("File Too Large", "Please select an audio file smaller than 10 MB.", parent=self)
+                return
+            self.audio_path = path
+            self.audio_label.configure(text=os.path.basename(path), text_color="green")
 
     def reset_form(self):
         self.name_entry.delete(0, "end")
@@ -404,13 +608,11 @@ class FormFrame(ctk.CTkScrollableFrame):
         self.year_entry.delete(0, "end")
         self.msg_text.delete("1.0", "end")
         self.counter_label.configure(text=f"0 / {MAX_MSG_LENGTH} chars", text_color="gray")
-        self.occasion_combo.set("Birthday")
-        self.custom_frame.pack_forget()
-        self.custom_entry.delete(0, "end")
         
         self.img_path = None
         self.img_label.configure(text="No file selected", text_color="gray")
-        self.audio_url_entry.delete(0, "end")
+        self.audio_path = None
+        self.audio_label.configure(text="No file selected", text_color="gray")
 
 # ==================== LIVE COLOR PICKER ====================
 class LiveColorPicker(ctk.CTkFrame):
@@ -418,42 +620,31 @@ class LiveColorPicker(ctk.CTkFrame):
         super().__init__(master, corner_radius=10)
         self.color = initial_color
         self.on_color_change = on_color_change
-
         ctk.CTkLabel(self, text=title, font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=15, pady=(10,5))
         self.canvas = Canvas(self, width=300, height=30, highlightthickness=0, bg="#0a0a0a")
         self.canvas.pack(padx=15, pady=(0,5))
         self._draw_hue_gradient()
-
         preview_frame = ctk.CTkFrame(self, fg_color="transparent")
         preview_frame.pack(anchor="w", padx=15, pady=(5,5))
         self.preview = ctk.CTkLabel(preview_frame, text="", width=30, height=30, corner_radius=6, fg_color=initial_color)
         self.preview.pack(side="left", padx=(0,10))
         self.hex_label = ctk.CTkLabel(preview_frame, text=initial_color, font=ctk.CTkFont(weight="bold"))
         self.hex_label.pack(side="left")
-
         self.presets_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.presets_frame.pack(anchor="w", padx=15, pady=(5,10))
-
         self.canvas.bind("<Button-1>", self._on_canvas_click)
         self.canvas.bind("<B1-Motion>", self._on_canvas_click)
 
     def _draw_hue_gradient(self):
-        width = 300
-        height = 30
-        for x in range(width):
-            hue = x / width
-            r, g, b = colorsys.hsv_to_rgb(hue, 1.0, 1.0)
-            hex_color = f"#{int(r*255):02x}{int(g*255):02x}{int(b*255):02x}"
-            self.canvas.create_line(x, 0, x, height, fill=hex_color, width=1)
+        for x in range(300):
+            r, g, b = colorsys.hsv_to_rgb(x / 300, 1.0, 1.0)
+            self.canvas.create_line(x, 0, x, 30, fill=f"#{int(r*255):02x}{int(g*255):02x}{int(b*255):02x}", width=1)
 
     def _on_canvas_click(self, event):
-        width = self.canvas.winfo_width()
-        if width <= 0: width = 300
-        x = min(max(event.x, 0), width-1)
-        hue = x / width
-        r, g, b = colorsys.hsv_to_rgb(hue, 1.0, 1.0)
-        hex_color = f"#{int(r*255):02x}{int(g*255):02x}{int(b*255):02x}"
-        self.set_color(hex_color)
+        w = self.canvas.winfo_width()
+        x = min(max(event.x, 0), w-1)
+        r, g, b = colorsys.hsv_to_rgb(x / w, 1.0, 1.0)
+        self.set_color(f"#{int(r*255):02x}{int(g*255):02x}{int(b*255):02x}")
 
     def set_color(self, hex_color):
         self.color = hex_color
@@ -464,28 +655,22 @@ class LiveColorPicker(ctk.CTkFrame):
     def set_presets(self, preset_list):
         for widget in self.presets_frame.winfo_children(): widget.destroy()
         for color in preset_list:
-            btn = ctk.CTkButton(self.presets_frame, text="", width=24, height=24, corner_radius=4,
-                                fg_color=color, hover_color=color, command=lambda c=color: self.set_color(c))
-            btn.pack(side="left", padx=2, pady=2)
+            ctk.CTkButton(self.presets_frame, text="", width=24, height=24, corner_radius=4, fg_color=color, hover_color=color, command=lambda c=color: self.set_color(c)).pack(side="left", padx=2, pady=2)
 
-# ==================== OUTPUT FRAME ====================
 class OutputFrame(ctk.CTkScrollableFrame):
     def __init__(self, master, app, url):
         super().__init__(master, corner_radius=12, fg_color="transparent", orientation="vertical")
         self.app = app
         self.url = url
-        self.fg_color = "#000000"
-        self.bg_color = "#FFFFFF"
+        self.fg_color, self.bg_color = "#000000", "#FFFFFF"
         self.qr_pil_image = None
         self._build()
 
     def _build(self):
         ctk.CTkLabel(self, text="🎉 Your Wish Link is Ready!", font=ctk.CTkFont(size=22, weight="bold")).pack(pady=(20,15))
-
         url_frame = ctk.CTkFrame(self, corner_radius=10, fg_color="#2B2B2B")
         url_frame.pack(fill="x", padx=30, pady=(5,15))
-        self.url_entry = ctk.CTkEntry(url_frame, height=40, font=ctk.CTkFont(size=13, weight="bold"),
-                                      text_color="#00C2FF", fg_color="#3A3A3A", state="normal")
+        self.url_entry = ctk.CTkEntry(url_frame, height=40, font=ctk.CTkFont(size=13, weight="bold"), text_color="#00C2FF", state="normal")
         self.url_entry.insert(0, self.url)
         self.url_entry.configure(state="readonly")
         self.url_entry.pack(side="left", fill="x", expand=True, padx=(15,10), pady=12)
@@ -493,35 +678,25 @@ class OutputFrame(ctk.CTkScrollableFrame):
 
         qr_container = ctk.CTkFrame(self, corner_radius=10)
         qr_container.pack(fill="x", padx=30, pady=(5,10))
-        
         self.qr_label = ctk.CTkLabel(qr_container, text="", width=240, height=240, fg_color="white", corner_radius=8)
         self.qr_label.pack(pady=15)
         ctk.CTkButton(qr_container, text="Download QR (PNG)", width=180, command=self.download_qr).pack(pady=(0,15))
 
         pickers_frame = ctk.CTkFrame(self, fg_color="transparent")
         pickers_frame.pack(fill="x", padx=30, pady=10)
-
         fg_picker = LiveColorPicker(pickers_frame, "Foreground Color", self.fg_color, on_color_change=self.set_fg_color)
         fg_picker.pack(fill="x", pady=(0,10))
         fg_picker.set_presets(["#000000", "#00008B", "#8B0000", "#006400", "#800080", "#FF8C00"])
-        self.fg_picker = fg_picker
-
+        
         bg_picker = LiveColorPicker(pickers_frame, "Background Color", self.bg_color, on_color_change=self.set_bg_color)
         bg_picker.pack(fill="x")
         bg_picker.set_presets(["#FFFFFF", "#000000", "#D3D3D3", "#FFFF00", "#ADD8E6"])
-        self.bg_picker = bg_picker
 
-        ctk.CTkButton(self, text="Create Another Wish", width=220, command=self.app.go_back_to_form,
-                      font=ctk.CTkFont(size=14, weight="bold")).pack(pady=25)
+        ctk.CTkButton(self, text="Create Another Wish", width=220, command=self.app.go_back_to_form, font=ctk.CTkFont(size=14, weight="bold")).pack(pady=25)
         self.regenerate_qr()
 
-    def set_fg_color(self, hex_color):
-        self.fg_color = hex_color
-        self.regenerate_qr()
-
-    def set_bg_color(self, hex_color):
-        self.bg_color = hex_color
-        self.regenerate_qr()
+    def set_fg_color(self, hex_color): self.fg_color = hex_color; self.regenerate_qr()
+    def set_bg_color(self, hex_color): self.bg_color = hex_color; self.regenerate_qr()
 
     def regenerate_qr(self):
         try:
@@ -533,48 +708,31 @@ class OutputFrame(ctk.CTkScrollableFrame):
             display_img = img.resize((240, 240), Image.LANCZOS)
             ctk_img = ctk.CTkImage(light_image=display_img, dark_image=display_img, size=(240, 240))
             self.qr_label.configure(image=ctk_img, text="")
-        except Exception as e:
-            msgbox.showerror("QR Error", str(e), parent=self)
+        except Exception: pass
 
     def copy_url(self):
-        self.clipboard_clear()
-        self.clipboard_append(self.url)
+        self.clipboard_clear(); self.clipboard_append(self.url)
         msgbox.showinfo("Copied", "Link copied to clipboard.", parent=self)
 
     def download_qr(self):
         if not self.qr_pil_image: return
-        path = ctk.filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG", "*.png")], title="Save QR Code")
-        if path:
-            try:
-                self.qr_pil_image.save(path)
-                msgbox.showinfo("Saved", f"QR saved to:\n{path}", parent=self)
-            except Exception as e:
-                msgbox.showerror("Error", str(e), parent=self)
+        path = ctk.filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG", "*.png")])
+        if path: self.qr_pil_image.save(path); msgbox.showinfo("Saved", f"QR saved to:\n{path}", parent=self)
 
 # ==================== MAIN APPLICATION ====================
 class WishLinkApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-        
-        if not check_internet():
-            self.withdraw()
-            set_window_icon(self)
-            msgbox.showerror("No Internet Connection", "Please connect to the internet and restart the application.", parent=self)
-            sys.exit(0)
-
         self.title("CT Wishlink Generator") 
         self.resizable(True, True)
-        
         set_window_icon(self)
 
-        self.base_url, self.studio_name, self.imgbb_api_key = load_config()
+        self.base_url, self.studio_name, self.imgbb_api, self.cloud_name, self.upload_preset = load_config()
 
-        win_w, win_h = 860, 900
-        center_window(self, win_w, win_h)
+        center_window(self, 860, 900)
 
         top = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
         top.pack(fill="x", padx=20, pady=(20,5))
-        
         ctk.CTkLabel(top, text="CT Wishlink Generator", font=ctk.CTkFont(size=22, weight="bold")).pack(side="left")
         ctk.CTkButton(top, text="⚙️ Settings", width=90, command=self.open_settings).pack(side="right")
 
@@ -585,96 +743,87 @@ class WishLinkApp(ctk.CTk):
         self.form_frame.pack(fill="both", expand=True)
         self.output_frame = None
 
-        if not self.base_url or not self.imgbb_api_key:
+        if not all([self.base_url, self.imgbb_api, self.cloud_name, self.upload_preset]):
             self.withdraw()
             self.after(200, self.open_settings_forced)
 
     def open_settings(self):
-        SettingsModal(self, self.base_url, self.studio_name, self.imgbb_api_key, self.on_settings_save)
+        SettingsModal(self, self.base_url, self.studio_name, self.imgbb_api, self.cloud_name, self.upload_preset, self.on_settings_save)
         
     def open_settings_forced(self):
-        SettingsModal(self, self.base_url, self.studio_name, self.imgbb_api_key, self.on_settings_save, forced=True)
+        SettingsModal(self, self.base_url, self.studio_name, self.imgbb_api, self.cloud_name, self.upload_preset, self.on_settings_save, forced=True)
 
-    def on_settings_save(self, new_url, new_studio, new_imgbb):
-        self.base_url = new_url
-        self.studio_name = new_studio
-        self.imgbb_api_key = new_imgbb
+    def on_settings_save(self, url, studio, imgbb, cloud, preset):
+        self.base_url, self.studio_name, self.imgbb_api, self.cloud_name, self.upload_preset = url, studio, imgbb, cloud, preset
 
     def start_generation(self):
         if not check_internet():
-            msgbox.showwarning("Internet Lost", "No internet connection detected. Please check your network and try again.", parent=self)
-            return
+            msgbox.showwarning("Internet Lost", "No internet connection detected.", parent=self); return
 
         name = self.form_frame.name_entry.get().strip()
-        if not name:
-            msgbox.showerror("Missing Input", "Recipient Name is required.", parent=self)
-            return
-            
-        sender = self.form_frame.sender_entry.get().strip()
         message = self.form_frame.msg_text.get("1.0", "end-1c").strip()
-        if not message:
-            msgbox.showerror("Missing Input", "Message is required.", parent=self)
-            return
-        
+        if not name or not message:
+            msgbox.showerror("Missing Input", "Name and Message are required.", parent=self); return
+            
         occasion = self.form_frame.occasion_combo.get()
         if occasion == "Custom":
-            custom = self.form_frame.custom_entry.get().strip()
-            if not custom:
-                msgbox.showerror("Missing Input", "Please enter a custom occasion.", parent=self)
-                return
-            occasion = custom
+            occasion = self.form_frame.custom_entry.get().strip()
+            if not occasion: msgbox.showerror("Missing Input", "Enter custom occasion.", parent=self); return
 
-        d = self.form_frame.day_combo.get()
-        m = self.form_frame.month_combo.get()
-        y = self.form_frame.year_entry.get().strip()
-        date_val = f"{m} {d}, {y}" if (d != "Day" and m != "Month" and y) else ""
-
-        theme = self.form_frame.theme_combo.get()
-        img_path = self.form_frame.img_path
-        
-        audio_url = self.form_frame.audio_url_entry.get().strip()
-
-        if not self.base_url or not self.imgbb_api_key:
-            msgbox.showerror("Configuration", "Please set Base URL and ImgBB API Key in Settings first.", parent=self)
-            return
+        if not all([self.base_url, self.imgbb_api, self.cloud_name, self.upload_preset]):
+            msgbox.showerror("Configuration", "Fill all required API fields in Settings.", parent=self); return
 
         self.loading = LoadingPopup(self)
         self.form_frame.gen_btn.configure(state="disabled", text="Processing...")
         
-        threading.Thread(target=self._process_generation,
-                         args=(name, theme, occasion, message, img_path, audio_url, date_val, sender, self.studio_name, self.imgbb_api_key),
-                         daemon=True).start()
+        args = (name, self.form_frame.theme_combo.get(), occasion, message, 
+                self.form_frame.img_path, self.form_frame.audio_path, 
+                f"{self.form_frame.month_combo.get()} {self.form_frame.day_combo.get()}, {self.form_frame.year_entry.get().strip()}", 
+                self.form_frame.sender_entry.get().strip())
+        
+        threading.Thread(target=self._process_generation, args=args, daemon=True).start()
 
-    def _process_generation(self, name, theme, occasion, message, img_path, audio_url, date_val, sender, studio_name, api_key):
-        img_url = ""
+    def _process_generation(self, name, theme, occasion, message, img_path, audio_path, date_val, sender):
+        img_url, audio_url = "", ""
+        report_data = {}
+        
         try:
             if img_path:
-                compressed_img = compress_image_to_webp(img_path, MAX_IMAGE_MB)
-                img_url = upload_to_imgbb(compressed_img, api_key)
+                orig_size = os.path.getsize(img_path)
+                compressed_img, is_compressed = compress_image_to_webp(img_path)
+                new_size = len(compressed_img.getvalue())
+                img_url = upload_to_imgbb(compressed_img, self.imgbb_api, is_compressed)
+                report_data['img'] = {'orig': orig_size, 'new': new_size, 'skipped': not is_compressed}
 
-            params = {
-                "name": name,
-                "theme": theme,
-                "occ": occasion,
-                "msg": message,
-            }
-            if date_val: params["date"] = date_val
+            if audio_path:
+                orig_size = os.path.getsize(audio_path)
+                mp3_path = compress_audio_to_mp3(audio_path)
+                new_size = os.path.getsize(mp3_path)
+                audio_url = upload_to_cloudinary(mp3_path, self.cloud_name, self.upload_preset)
+                report_data['audio'] = {'orig': orig_size, 'new': new_size}
+                os.remove(mp3_path) # Cleanup temp file
+
+            params = {"name": name, "theme": theme, "occ": occasion, "msg": message}
+            if date_val and "Day" not in date_val: params["date"] = date_val
             if sender: params["sender"] = sender
-            if studio_name: params["studio_name"] = studio_name
+            if self.studio_name: params["studio_name"] = self.studio_name
             if img_url: params["img"] = img_url
             if audio_url: params["audio"] = audio_url 
 
             qs = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
             base = self.base_url.rstrip("/")
-            final_long_url = f"{base}/?{qs}" if "?" not in base else f"{base}&{qs}"
+            final_url = f"{base}/?{qs}" if "?" not in base else f"{base}&{qs}"
             
-            self.after(0, self._on_success, final_long_url)
+            self.after(0, self._show_success_report, report_data, final_url)
         except Exception as e:
             self.after(0, self._on_error, str(e))
 
-    def _on_success(self, url):
+    def _show_success_report(self, report_data, url):
         self.loading.stop()
         self.form_frame.gen_btn.configure(state="normal", text="Generate Link & QR")
+        SuccessReportModal(self, report_data, lambda: self._on_success(url))
+
+    def _on_success(self, url):
         self.form_frame.pack_forget()
         self.output_frame = OutputFrame(self.page_container, self, url)
         self.output_frame.pack(fill="both", expand=True)
@@ -692,7 +841,12 @@ class WishLinkApp(ctk.CTk):
         self.form_frame.reset_form()
         self.form_frame.pack(fill="both", expand=True)
 
-# ==================== LAUNCH ====================
+# ==================== LAUNCH CHECK ====================
 if __name__ == "__main__":
-    app = WishLinkApp()
-    app.mainloop()
+    if not os.path.exists(SETUP_MARKER):
+        setup_app = SetupWindow()
+        setup_app.mainloop()
+        
+    if os.path.exists(SETUP_MARKER):
+        app = WishLinkApp()
+        app.mainloop()
