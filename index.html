@@ -203,6 +203,17 @@
     -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite:xor; mask-composite:exclude; opacity:.6; pointer-events:none; }
 
+  /* Image loader — reuses existing theme CSS vars (--glass, --accent, --ink-soft, --shadow-tint) so it
+     automatically matches whichever theme is active; reuses the existing @keyframes spin below. */
+  .img-loader{ position:absolute; inset:0; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:.55rem; background:var(--glass); transition:opacity .4s ease; }
+  .img-loader.is-hidden{ opacity:0; pointer-events:none; }
+  .img-loader .img-spinner{ width:26px; height:26px; border-radius:9999px; border:2.5px solid rgba(var(--shadow-tint),.22);
+    border-top-color:var(--accent); animation:spin .8s linear infinite; }
+  .img-loader .img-loader-text{ font-size:.68rem; letter-spacing:.18em; font-weight:600; text-transform:uppercase; color:var(--ink-soft); }
+  #polaroidImg{ opacity:0; transition:opacity .5s ease; }
+  #polaroidImg.img-loaded{ opacity:1; }
+
   .message-text{ color:var(--ink-body); font-weight:400; line-height:1.85; font-size:clamp(1.05rem,2.2vw,1.25rem);
   overflow-wrap:break-word; word-break:break-all; max-width:100%; }
 
@@ -385,6 +396,10 @@
       <div id="frameCol" class="reveal-item flex justify-center hidden">
         <div class="keepsake-frame w-full max-w-xs md:max-w-sm">
           <div class="keepsake-photo">
+            <div id="imgLoader" class="img-loader">
+              <span class="img-spinner" aria-hidden="true"></span>
+              <span class="img-loader-text">Loading…</span>
+            </div>
             <img id="polaroidImg" src="" alt="A keepsake photo">
           </div>
         </div>
@@ -401,7 +416,7 @@
   </div>
 </main>
 
-<audio id="audioEl" preload="auto"></audio>
+<audio id="audioEl" preload="metadata"></audio>
 
 <script>
 (function(){
@@ -459,6 +474,7 @@
   var frameCol = document.getElementById('frameCol');
   var contentGrid = document.getElementById('contentGrid');
   var polaroidImg = document.getElementById('polaroidImg');
+  var imgLoader = document.getElementById('imgLoader');
 
   function collapseFrame(){
     frameCol.classList.add('hidden');
@@ -467,10 +483,18 @@
   }
   if (data.img) {
     frameCol.classList.remove('hidden');
-    polaroidImg.addEventListener('error', collapseFrame, { once:true });
+    polaroidImg.addEventListener('load', function(){
+      polaroidImg.classList.add('img-loaded');
+      if (imgLoader) imgLoader.classList.add('is-hidden');
+    }, { once:true });
+    polaroidImg.addEventListener('error', function(){
+      if (imgLoader) imgLoader.classList.add('is-hidden');
+      collapseFrame();
+    }, { once:true });
     polaroidImg.src = data.img;
   } else {
     collapseFrame();
+    if (imgLoader) imgLoader.classList.add('is-hidden');
   }
 
   // ---------- Date badge ----------
