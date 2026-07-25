@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/init/env python3
 """
 CT Wishlink Generator – Premium Windows Desktop App
-Features: Direct Download of FFmpeg/FFprobe binaries into local 'ffmpeg_bin',
+Features: Direct Download of FFmpeg/FFprobe binaries into local 'ffmpeg_bin' with Live % Progress,
 Live Terminal Logs, PyInstaller support, Smart Image Compression (<500KB skipped), 
 Advanced Error Handling, Full Occasions List, Hidden CMD Window for Audio.
 """
@@ -137,14 +137,14 @@ def center_window(win, width, height):
     y = (sh - height) // 2
     win.geometry(f"{width}x{height}+{x}+{y}")
 
-# ==================== INITIAL SETUP WINDOW (DIRECT DOWNLOADER) ====================
+# ==================== INITIAL SETUP WINDOW (WITH LIVE % DOWNLOAD) ====================
 class SetupWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("Initial Setup Required")
         self.resizable(False, False)
         set_window_icon(self)
-        center_window(self, 520, 420)
+        center_window(self, 520, 440)
         
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -152,12 +152,13 @@ class SetupWindow(ctk.CTk):
         frame.pack(fill="both", expand=True, padx=20, pady=20)
 
         ctk.CTkLabel(frame, text="⚙️ Component Installation", font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(10, 5))
-        ctk.CTkLabel(frame, text="Directly downloading FFmpeg/FFprobe binaries into\n'ffmpeg_bin' folder. Please do not close this window.", 
+        ctk.CTkLabel(frame, text="Downloading FFmpeg/FFprobe binaries into local 'ffmpeg_bin'.\nPlease do not close this window.", 
                      font=ctk.CTkFont(size=12), text_color="gray", justify="center").pack(pady=(0, 10))
 
-        self.progress = ctk.CTkProgressBar(frame, mode="indeterminate", width=440)
+        # Determinate Progress Bar for accurate % loading
+        self.progress = ctk.CTkProgressBar(frame, mode="determinate", width=440)
         self.progress.pack(pady=5)
-        self.progress.stop()
+        self.progress.set(0)
 
         self.log_box = ctk.CTkTextbox(frame, height=130, width=440, state="disabled", fg_color="#1E1E1E", text_color="#00FF00", font=ctk.CTkFont(family="Consolas", size=11))
         self.log_box.pack(pady=10)
@@ -177,7 +178,6 @@ class SetupWindow(ctk.CTk):
             return
 
         self.start_btn.configure(state="disabled")
-        self.progress.start()
         self.append_log(">>> Starting direct binary download...")
 
         threading.Thread(target=self._download_worker, daemon=True).start()
@@ -192,17 +192,37 @@ class SetupWindow(ctk.CTk):
                 "ffprobe.exe": "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.4.1/ffprobe-4.4.1-win-64.zip"
             }
 
+            total_files = len(files_to_download)
+            current_index = 0
+
             for name, url in files_to_download.items():
-                self.after(0, self.append_log, f">>> Downloading {name} from server...")
+                current_index += 1
+                self.after(0, self.append_log, f">>> Downloading {name} ({current_index}/{total_files})...")
+                
                 response = requests.get(url, stream=True)
                 response.raise_for_status()
                 
+                total_size = int(response.headers.get('content-length', 0))
+                downloaded_size = 0
+                chunk_data = bytearray()
+
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        chunk_data.extend(chunk)
+                        downloaded_size += len(chunk)
+                        if total_size > 0:
+                            file_pct = downloaded_size / total_size
+                            # Overall progress calculation
+                            overall_pct = ((current_index - 1) / total_files) + (file_pct / total_files)
+                            self.after(0, self.progress.set, overall_pct)
+
                 self.after(0, self.append_log, f">>> Extracting {name} into 'ffmpeg_bin'...")
-                with zipfile.ZipFile(BytesIO(response.content)) as z:
+                with zipfile.ZipFile(BytesIO(chunk_data)) as z:
                     z.extractall(LOCAL_BIN_DIR)
                 
                 self.after(0, self.append_log, f">>> Successfully saved: {name}")
 
+            self.after(0, self.progress.set, 1.0)
             self.after(0, self.append_log, ">>> All files safely stored in your app folder!")
 
             with open(SETUP_MARKER, "w") as f:
@@ -214,12 +234,10 @@ class SetupWindow(ctk.CTk):
             self.after(0, self._setup_error, str(e))
 
     def _setup_success(self):
-        self.progress.stop()
         msgbox.showinfo("Success", "Components downloaded directly to folder! Click OK to launch.", parent=self)
         self.destroy()
 
     def _setup_error(self, err):
-        self.progress.stop()
         self.start_btn.configure(state="normal")
         self.append_log(f"ERROR: {err}")
         msgbox.showerror("Error", f"Failed to download components:\n{err}", parent=self)
@@ -241,7 +259,6 @@ def init_ffmpeg_path():
         AudioSegment.ffprobe = ffprobe_exe
         os.environ["PATH"] += os.pathsep + LOCAL_BIN_DIR
 
-    # Hide CMD window when pydub/ffmpeg runs subprocess on Windows
     if os.name == 'nt':
         import subprocess
         subprocess.Popen = patch_subprocess_popen(subprocess.Popen)
@@ -251,7 +268,6 @@ def init_ffmpeg_path():
 def patch_subprocess_popen(original_popen):
     class PatchedPopen(original_popen):
         def __init__(self, *args, **kwargs):
-            # Add CREATE_NO_WINDOW flag to hide the command prompt window
             if os.name == 'nt':
                 creationflags = kwargs.get('creationflags', 0)
                 kwargs['creationflags'] = creationflags | 0x08000000 # CREATE_NO_WINDOW
