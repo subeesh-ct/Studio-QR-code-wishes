@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CT Wishlink - Premium Themes Gallery</title>
+    <style>
+        :root {
+            --bg-color: #0b1120;
+            --card-bg: #162032;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            background-color: rgba(22, 32, 50, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 1px solid #1e293b;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        header h1 {
+            font-size: 28px;
+            color: #fff;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 800;
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        header p {
+            font-size: 15px;
+            color: var(--text-muted);
+        }
+
+        /* Main Container */
+        .container {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            padding: 25px;
+            gap: 30px;
+            max-width: 1500px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        @media (min-width: 992px) {
+            .container { flex-direction: row; }
+        }
+
+        /* Sidebar - Occasions List */
+        .sidebar {
+            width: 100%;
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            border: 1px solid #1e293b;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        @media (min-width: 992px) {
+            .sidebar {
+                width: 280px;
+                min-width: 280px;
+                max-height: calc(100vh - 150px);
+                position: sticky;
+                top: 130px;
+            }
+        }
+
+        .sidebar h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #fff;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 15px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .occasion-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 14px 18px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+        }
+
+        .occasion-btn:hover {
+            background: rgba(59, 130, 246, 0.05);
+            color: #fff;
+            padding-left: 25px; /* Slide effect */
+        }
+
+        .occasion-btn.active {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+        
+        /* Note text inside buttons */
+        .btn-note {
+            display: block;
+            font-size: 11px;
+            font-weight: 400;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        /* Main Content - Preview Area */
+        .preview-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .preview-header {
+            background: var(--card-bg);
+            padding: 20px 25px;
+            border-radius: 16px;
+            border: 1px solid #1e293b;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .preview-header h2 {
+            font-size: 22px;
+            color: #fff;
+        }
+        .preview-header h2 span {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        /* Theme Previews Grid */
+        .themes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 35px;
+            justify-items: center;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Phone Mockup Card */
+        .theme-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 24px;
+            border: 1px solid #1e293b;
+            width: 100%;
+            max-width: 360px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* Dynamic Glow Effects */
+        .card-girl:hover { box-shadow: 0 15px 40px rgba(255, 107, 129, 0.2); transform: translateY(-5px); }
+        .card-boy:hover { box-shadow: 0 15px 40px rgba(30, 144, 255, 0.2); transform: translateY(-5px); }
+        .card-neutral:hover { box-shadow: 0 15px 40px rgba(46, 213, 115, 0.2); transform: translateY(-5px); }
+
+        .theme-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+            padding: 8px 25px;
+            border-radius: 30px;
+            letter-spacing: 0.5px;
+        }
+
+        .title-girl { color: #ff6b81; background: rgba(255, 107, 129, 0.15); border: 1px solid rgba(255, 107, 129, 0.3); }
+        .title-boy { color: #1e90ff; background: rgba(30, 144, 255, 0.15); border: 1px solid rgba(30, 144, 255, 0.3); }
+        .title-neutral { color: #2ed573; background: rgba(46, 213, 115, 0.15); border: 1px solid rgba(46, 213, 115, 0.3); }
+
+        /* REALISTIC PHONE MOCKUP */
+        .phone-mockup {
+            width: 300px;  
+            height: 600px; 
+            border: 12px solid #000;
+            border-radius: 40px;
+            overflow: hidden;
+            background: #000;
+            position: relative;
+            box-shadow: 
+                inset 0 0 10px rgba(255,255,255,0.2),
+                0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        /* The Notch (Camera area) */
+        .phone-mockup::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 130px;
+            height: 28px;
+            background: #000;
+            border-bottom-left-radius: 18px;
+            border-bottom-right-radius: 18px;
+            z-index: 10;
+        }
+
+        /* The actual mini website iframe */
+        .phone-mockup iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 28px;
+            background-color: #fff;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Custom Scrollbar for Sidebar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        .open-btn {
+            margin-top: 25px;
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .open-btn:hover {
+            background: var(--primary-hover);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .loading-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #475569;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Spinner */
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>CT Wishlink Gallery</h1>
+        <p>Explore beautiful, responsive wish pages for every occasion.</p>
+    </header>
+
+    <div class="container">
+        <!-- Left Sidebar: Occasions List -->
+        <div class="sidebar">
+            <h2>Select Occasion</h2>
+            <div id="occasions-list">
+                <!-- Buttons will be generated by JS -->
+            </div>
+        </div>
+
+        <!-- Right Content: Live Previews -->
+        <div class="preview-area">
+            <div class="preview-header">
+                <h2>Showing themes for: <span id="current-occasion-title">Select an Occasion</span></h2>
+            </div>
+            
+            <div class="themes-grid" id="themes-grid">
+                <!-- Iframes will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Reordered the 16 Occasions to separate Valentine's Day and Mother's Day
+        const occasions = [
+            "Birthday", 
+            "Anniversary", 
+            "Wedding", 
+            "Graduation", 
+            "Farewell", 
+            "Valentine's Day", 
+            "Father's Day", 
+            "Diwali", 
+            "Pongal", 
+            "Eid", 
+            "Christmas", 
+            "Mother's Day", 
+            "New Year", 
+            "Congratulations", 
+            "Get Well Soon", 
+            "Custom"
+        ];
+
+        // 2. The 3 Themes
+        const themes = [
+            { name: "Girl Theme", class: "title-girl", cardClass: "card-girl" },
+            { name: "Boy Theme", class: "title-boy", cardClass: "card-boy" },
+            { name: "Both/Neutral", class: "title-neutral", cardClass: "card-neutral" }
+        ];
+
+        const occasionsListDiv = document.getElementById('occasions-list');
+        const themesGridDiv = document.getElementById('themes-grid');
+        const titleSpan = document.getElementById('current-occasion-title');
+
+        // Function to build the Occasion Buttons
+        function initOccasions() {
+            occasions.forEach((occ, index) => {
+                let btn = document.createElement('button');
+                btn.className = 'occasion-btn';
+                
+                // Add tiny hint text for similar themes
+                if (occ === "Valentine's Day") {
+                    btn.innerHTML = `${occ} <span class="btn-note">(Same as Mother's Day)</span>`;
+                } else if (occ === "Mother's Day") {
+                    btn.innerHTML = `${occ} <span class="btn-note">(Same as Valentine's Day)</span>`;
+                } else {
+                    btn.textContent = occ;
+                }
+
+                btn.onclick = () => loadPreview(occ, btn);
+                occasionsListDiv.appendChild(btn);
+
+                // Load the first occasion by default
+                if(index === 0) {
+                    loadPreview(occ, btn);
+                }
+            });
+        }
+
+        // Function to load the 3 Theme Iframes for a selected Occasion
+        function loadPreview(occasion, activeBtn) {
+            // Update Active Button styling
+            document.querySelectorAll('.occasion-btn').forEach(b => b.classList.remove('active'));
+            if(activeBtn) activeBtn.classList.add('active');
+
+            // Update Title
+            titleSpan.textContent = occasion;
+
+            // Trigger re-animation
+            themesGridDiv.style.animation = 'none';
+            themesGridDiv.offsetHeight; // trigger reflow
+            themesGridDiv.style.animation = 'fadeIn 0.5s ease-in-out';
+
+            // Clear existing iframes
+            themesGridDiv.innerHTML = '';
+
+            // Generate the 3 Theme Cards with Iframes
+            themes.forEach(theme => {
+                // Properly encode the theme and occasion for the URL
+                let encTheme = encodeURIComponent(theme.name);
+                let encOcc = encodeURIComponent(occasion);
+                
+                // STRICTLY MATCHING YOUR EXACT URL STRUCTURE
+                let finalLink = `https://subeesh-ct.github.io/Studio-QR-code-wishes/?name=Your%20Name&theme=${encTheme}&occ=${encOcc}&msg=Artificial%20intelligence%20is%20rapidly%20transforming%20how%20we%20live%2C%20work%2C%20and%20communicate.%20By%20processing%20massive%20amounts%20of%20data%20in%20seconds%2C%20advanced%20algorit&date=Jan%2014%2C%202005&sender=Sender%20Name&studio_name=Coding%20Theriyuma%20%C2%BF&img=https%3A%2F%2Fi.ibb.co%2FhxngQbss%2Fimg.jpg&audio=https%3A%2F%2Fres.cloudinary.com%2Flx8tfhkq%2Fvideo%2Fupload%2Fv1785059729%2Fkfsjbdpk28zvqpoy8u3g.mp3`;
+
+                // Create the Card HTML
+                let cardHTML = `
+                    <div class="theme-card ${theme.cardClass}">
+                        <div class="theme-title ${theme.class}">${theme.name}</div>
+                        <div class="phone-mockup">
+                            <div class="loading-text">
+                                <div class="spinner"></div>
+                                Loading preview...
+                            </div>
+                            <iframe src="${finalLink}" loading="lazy" title="${theme.name} Preview"></iframe>
+                        </div>
+                        <a href="${finalLink}" target="_blank" class="open-btn">Live Preview 🚀</a>
+                    </div>
+                `;
+                themesGridDiv.innerHTML += cardHTML;
+            });
+        }
+
+        // Initialize the page
+        window.onload = initOccasions;
+    </script>
+</body>
+</html>
