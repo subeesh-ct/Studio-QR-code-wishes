@@ -599,7 +599,8 @@ class FormFrame(ctk.CTkScrollableFrame):
         self.msg_text._enforcing = False
 
     def select_image(self):
-        path = ctk.filedialog.askopenfilename(title="Select an Image", filetypes=[("Images", "*.jpg *.jpeg *.png *.webp"), ("All", "*.*")])
+        # Changed to show all files by default
+        path = ctk.filedialog.askopenfilename(title="Select an Image", filetypes=[("All Files", "*.*")])
         if path:
             if os.path.getsize(path) > MAX_FILE_BYTES:
                 msgbox.showerror("File Too Large", "Please select an image smaller than 10 MB.", parent=self)
@@ -608,7 +609,8 @@ class FormFrame(ctk.CTkScrollableFrame):
             self.img_label.configure(text=os.path.basename(path), text_color="green")
 
     def select_audio(self):
-        path = ctk.filedialog.askopenfilename(title="Select Audio", filetypes=[("Audio", "*.mp3 *.m4a *.wav *.ogg *.aac"), ("All", "*.*")])
+        # Changed to show all files by default
+        path = ctk.filedialog.askopenfilename(title="Select Audio", filetypes=[("All Files", "*.*")])
         if path:
             if os.path.getsize(path) > MAX_FILE_BYTES:
                 msgbox.showerror("File Too Large", "Please select an audio file smaller than 10 MB.", parent=self)
