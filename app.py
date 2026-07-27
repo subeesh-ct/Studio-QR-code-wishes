@@ -3,7 +3,7 @@
 CT Wishlink Generator – Premium Windows Desktop App
 Features: Direct Download of FFmpeg/FFprobe binaries into local 'ffmpeg_bin' with Live % Progress,
 Live Terminal Logs, PyInstaller support, Smart Image Compression (<500KB skipped), 
-Advanced Error Handling, Full Occasions List, Hidden CMD Window for Audio.
+Advanced Error Handling, Full Occasions List, Hidden CMD Window for Audio, Smart Live Theme Preview.
 """
 
 import subprocess
@@ -502,26 +502,33 @@ class FormFrame(ctk.CTkScrollableFrame):
         self.sender_entry = ctk.CTkEntry(self, placeholder_text="Enter your name", height=36)
         self.sender_entry.pack(fill="x", pady=(0,10))
 
-        ctk.CTkLabel(self, text="Theme", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(5,2))
-        self.theme_combo = ctk.CTkComboBox(self, values=["Girl Theme", "Boy Theme", "Both/Neutral"], state="readonly", height=36)
-        self.theme_combo.set("Girl Theme")
+        ctk.CTkLabel(self, text="Theme *", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(5,2))
+        self.theme_combo = ctk.CTkComboBox(self, values=["Select Theme", "Girl Theme", "Boy Theme", "Both/Neutral"], state="readonly", height=36, command=self._on_theme_change)
+        self.theme_combo.set("Select Theme")
         self.theme_combo.pack(fill="x", pady=(0,10))
 
-        ctk.CTkLabel(self, text="Occasion", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(5,2))
+        ctk.CTkLabel(self, text="Occasion Theme *", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(5,2))
         
         occasions = [
-            "Birthday", "Anniversary", "Wedding", "Graduation", "Farewell", 
+            "Select Occasion", "Birthday", "Anniversary", "Wedding", "Graduation", "Farewell", 
             "Valentine's Day", "Mother's Day", "Father's Day", "Diwali", 
             "Pongal", "Eid", "Christmas", "New Year", "Congratulations", 
-            "Get Well Soon", "Custom"
+            "Get Well Soon", "Engagement"
         ]
         self.occasion_combo = ctk.CTkComboBox(self, values=occasions, state="readonly", command=self._on_occasion_change, height=36)
-        self.occasion_combo.set("Birthday")
+        self.occasion_combo.set("Select Occasion")
         self.occasion_combo.pack(fill="x", pady=(0,5))
         
-        self.custom_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.custom_entry = ctk.CTkEntry(self.custom_frame, placeholder_text="Your custom occasion")
+        # --- Containers for dynamic elements ---
+        # NOTE: Not packing them initially keeps them hidden without taking up space
+        self.entry_container = ctk.CTkFrame(self, fg_color="transparent")
+        self.custom_entry = ctk.CTkEntry(self.entry_container, placeholder_text="Enter Display Title")
         self.custom_entry.pack(fill="x")
+        
+        self.preview_container = ctk.CTkFrame(self, fg_color="transparent")
+        self.preview_btn = ctk.CTkButton(self.preview_container, text="👁️ View Theme Demo", command=self.preview_theme, 
+                                         fg_color="#34A853", hover_color="#2A8542", height=32, font=ctk.CTkFont(weight="bold"))
+        self.preview_btn.pack(pady=0)
 
         ctk.CTkLabel(self, text="Event Date (Optional)", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(10,2))
         self.date_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -576,11 +583,90 @@ class FormFrame(ctk.CTkScrollableFrame):
                                      width=240, height=44, corner_radius=12, font=ctk.CTkFont(size=15, weight="bold"))
         self.gen_btn.pack(pady=20)
 
+    def _on_theme_change(self, choice):
+        self._update_visibility()
+
     def _on_occasion_change(self, choice):
-        if choice == "Custom":
-            self.custom_frame.pack(after=self.occasion_combo, fill="x", pady=(0,5))
+        if choice == "Select Occasion":
+            self.custom_entry.delete(0, "end")
         else:
-            self.custom_frame.pack_forget()
+            default_titles = {
+                "Birthday": "A BIRTHDAY WISH",
+                "Anniversary": "HAPPY ANNIVERSARY",
+                "Wedding": "HAPPY WEDDING",
+                "Graduation": "HAPPY GRADUATION",
+                "Farewell": "HAPPY FAREWELL",
+                "Valentine's Day": "HAPPY VALENTINE'S DAY",
+                "Mother's Day": "HAPPY MOTHER'S DAY",
+                "Father's Day": "HAPPY FATHER'S DAY",
+                "Diwali": "HAPPY DIWALI",
+                "Pongal": "HAPPY PONGAL",
+                "Eid": "EID MUBARAK",
+                "Christmas": "MERRY CHRISTMAS",
+                "New Year": "HAPPY NEW YEAR",
+                "Congratulations": "CONGRATULATIONS",
+                "Get Well Soon": "GET WELL SOON",
+                "Engagement": "HAPPY ENGAGEMENT"
+            }
+            self.custom_entry.delete(0, "end")
+            self.custom_entry.insert(0, default_titles.get(choice, f"HAPPY {choice.upper()}"))
+            
+        self._update_visibility()
+
+    def _update_visibility(self):
+        theme = self.theme_combo.get()
+        occ = self.occasion_combo.get()
+        
+        # 1. Text Box Container (pack immediately AFTER the occasion dropdown so it stays in place!)
+        if occ != "Select Occasion":
+            if not self.entry_container.winfo_manager():
+                self.entry_container.pack(after=self.occasion_combo, fill="x", pady=(0, 5))
+        else:
+            if self.entry_container.winfo_manager():
+                self.entry_container.pack_forget()
+
+        # 2. Preview Button Container (pack immediately AFTER the Text Box!)
+        if theme != "Select Theme" and occ != "Select Occasion":
+            if not self.preview_container.winfo_manager():
+                self.preview_container.pack(after=self.entry_container, fill="x", pady=(0, 10))
+        else:
+            if self.preview_container.winfo_manager():
+                self.preview_container.pack_forget()
+
+    def preview_theme(self):
+        theme = self.theme_combo.get()
+        occ = self.occasion_combo.get()
+        title = self.custom_entry.get().strip()
+            
+        if not self.app.base_url:
+            msgbox.showerror("Settings Missing", "Base URL is required to generate a preview. Please update Settings.", parent=self.app)
+            return
+            
+        # Magic Shortcut: If Engagement, pass "custom" so HTML uses the special background
+        url_occ = "custom" if occ == "Engagement" else occ
+
+        params = {
+            "name": "Your Name",
+            "theme": theme,
+            "occ": url_occ,
+            "title": title if title else f"HAPPY {occ.upper()}",
+            "msg": "Artificial intelligence is rapidly transforming how we live, work, and communicate. By processing massive amounts of data in seconds, advanced algorit",
+            "date": "Jan 14, 2026",
+            "sender": "Sender Name",
+            "img": "https://i.ibb.co/hxngQbss/img.jpg",
+            "audio": "https://res.cloudinary.com/lx8tfhkq/video/upload/v1785059729/kfsjbdpk28zvqpoy8u3g.mp3"
+        }
+        
+        if self.app.studio_name:
+            params["studio_name"] = self.app.studio_name
+        else:
+            params["studio_name"] = "Coding Theriyuma ¿" 
+            
+        qs = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
+        base = self.app.base_url.rstrip("/")
+        preview_url = f"{base}/?{qs}" if "?" not in base else f"{base}&{qs}"
+        
+        webbrowser.open(preview_url)
 
     def _on_msg_keyrelease(self, event): self._enforce_msg_limit()
     def _on_msg_modified(self, event): 
@@ -599,7 +685,6 @@ class FormFrame(ctk.CTkScrollableFrame):
         self.msg_text._enforcing = False
 
     def select_image(self):
-        # Changed to show all files by default
         path = ctk.filedialog.askopenfilename(title="Select an Image", filetypes=[("All Files", "*.*")])
         if path:
             if os.path.getsize(path) > MAX_FILE_BYTES:
@@ -609,7 +694,6 @@ class FormFrame(ctk.CTkScrollableFrame):
             self.img_label.configure(text=os.path.basename(path), text_color="green")
 
     def select_audio(self):
-        # Changed to show all files by default
         path = ctk.filedialog.askopenfilename(title="Select Audio", filetypes=[("All Files", "*.*")])
         if path:
             if os.path.getsize(path) > MAX_FILE_BYTES:
@@ -626,6 +710,11 @@ class FormFrame(ctk.CTkScrollableFrame):
         self.year_entry.delete(0, "end")
         self.msg_text.delete("1.0", "end")
         self.counter_label.configure(text=f"0 / {MAX_MSG_LENGTH} chars", text_color="gray")
+        
+        self.theme_combo.set("Select Theme")
+        self.occasion_combo.set("Select Occasion")
+        self.custom_entry.delete(0, "end")
+        self._update_visibility()
         
         self.img_path = None
         self.img_label.configure(text="No file selected", text_color="gray")
@@ -780,13 +869,19 @@ class WishLinkApp(ctk.CTk):
 
         name = self.form_frame.name_entry.get().strip()
         message = self.form_frame.msg_text.get("1.0", "end-1c").strip()
+        
+        theme = self.form_frame.theme_combo.get()
+        occasion_theme = self.form_frame.occasion_combo.get()
+        
+        if theme == "Select Theme" or occasion_theme == "Select Occasion":
+            msgbox.showerror("Missing Input", "Please select a Theme and an Occasion.", parent=self); return
+
         if not name or not message:
-            msgbox.showerror("Missing Input", "Name and Message are required.", parent=self); return
+            msgbox.showerror("Missing Input", "Recipient Name and Message are required.", parent=self); return
             
-        occasion = self.form_frame.occasion_combo.get()
-        if occasion == "Custom":
-            occasion = self.form_frame.custom_entry.get().strip()
-            if not occasion: msgbox.showerror("Missing Input", "Enter custom occasion.", parent=self); return
+        custom_title = self.form_frame.custom_entry.get().strip()
+        if not custom_title:
+            msgbox.showerror("Missing Input", "Enter a Display Title.", parent=self); return
 
         if not all([self.base_url, self.imgbb_api, self.cloud_name, self.upload_preset]):
             msgbox.showerror("Configuration", "Fill all required API fields in Settings.", parent=self); return
@@ -794,14 +889,14 @@ class WishLinkApp(ctk.CTk):
         self.loading = LoadingPopup(self)
         self.form_frame.gen_btn.configure(state="disabled", text="Processing...")
         
-        args = (name, self.form_frame.theme_combo.get(), occasion, message, 
+        args = (name, theme, occasion_theme, custom_title, message, 
                 self.form_frame.img_path, self.form_frame.audio_path, 
                 f"{self.form_frame.month_combo.get()} {self.form_frame.day_combo.get()}, {self.form_frame.year_entry.get().strip()}", 
                 self.form_frame.sender_entry.get().strip())
         
         threading.Thread(target=self._process_generation, args=args, daemon=True).start()
 
-    def _process_generation(self, name, theme, occasion, message, img_path, audio_path, date_val, sender):
+    def _process_generation(self, name, theme, occasion_theme, custom_title, message, img_path, audio_path, date_val, sender):
         img_url, audio_url = "", ""
         report_data = {}
         
@@ -821,7 +916,10 @@ class WishLinkApp(ctk.CTk):
                 report_data['audio'] = {'orig': orig_size, 'new': new_size}
                 os.remove(mp3_path) # Cleanup temp file
 
-            params = {"name": name, "theme": theme, "occ": occasion, "msg": message}
+            # Magic Shortcut: If Engagement, pass "custom" so HTML uses the special background
+            url_occ = "custom" if occasion_theme == "Engagement" else occasion_theme
+
+            params = {"name": name, "theme": theme, "occ": url_occ, "title": custom_title, "msg": message}
             if date_val and "Day" not in date_val: params["date"] = date_val
             if sender: params["sender"] = sender
             if self.studio_name: params["studio_name"] = self.studio_name
