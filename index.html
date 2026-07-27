@@ -53,6 +53,7 @@
     'new year':          { accent:'#A78BFA', accentDark:'#7C3AED', label:'HAPPY NEW YEAR' },
     'congratulations':   { accent:'#2DD4BF', accentDark:'#0F766E', label:'CONGRATULATIONS' },
     'get well soon':     { accent:'#38BDF8', accentDark:'#0284C7', label:'GET WELL SOON' },
+    'engagement':        { accent:'#F43F5E', accentDark:'#BE123C', label:'HAPPY ENGAGEMENT' },
     'custom':            { accent:null, accentDark:null, label:'A ONE-OF-A-KIND WISH', isCustom:true }
   };
   var occKey = Object.prototype.hasOwnProperty.call(OCCASIONS, occRaw) ? occRaw : 'custom';
@@ -64,6 +65,8 @@
 
   var studioNameRaw = (params.get('studio_name') || '').trim();
   var studioName = studioNameRaw || 'WishLink Studio';
+
+  var titleRaw = (params.get('title') || '').trim();
 
   var root = document.documentElement;
   var s = root.style;
@@ -83,7 +86,7 @@
   if (isCustom) root.classList.add('occ-custom');
 
   window.__wishlink = { name:name, msg:msg, img:params.get('img'), audio:params.get('audio'), date:params.get('date'),
-    sender:params.get('sender'), studioName:studioName, theme:theme, themeKey:themeKey, occasion:occasion, isCustom:isCustom, accent:accent, accentDark:accentDark };
+    sender:params.get('sender'), studioName:studioName, theme:theme, themeKey:themeKey, occasion:occasion, isCustom:isCustom, accent:accent, accentDark:accentDark, title:titleRaw };
 })();
 </script>
 
@@ -435,7 +438,7 @@
   brandMark.setAttribute('aria-label', 'Visit ' + data.studioName);
 
   // ---------- Populate content ----------
-  document.getElementById('occasionLabel').textContent = data.occasion.label;
+  document.getElementById('occasionLabel').textContent = data.title || data.occasion.label;
   document.getElementById('nameText').textContent = data.name;
   document.getElementById('messageText').textContent = data.msg;
 
